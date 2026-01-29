@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, Mail, Github, Linkedin, Youtube } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/app/components/ui/button";
 import { useRef } from "react";
 
@@ -14,15 +14,31 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
   const [showExploreMenu, setShowExploreMenu] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [activeContentType, setActiveContentType] = useState<string | null>(null);
   const exploreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for active content type from localStorage on mount and location change
+  useEffect(() => {
+    const storedContentType = localStorage.getItem('selectedContentType');
+    setActiveContentType(storedContentType);
+  }, [location]);
 
   const handleNavigateToContentType = (contentType: string) => {
-    // For now, just navigate to home. Later this will open subjects and redirect to specific content type
+    // Store the selected content type in localStorage
+    localStorage.setItem('selectedContentType', contentType);
+    setActiveContentType(contentType);
+    // Navigate to home page
     navigate('/');
     setShowMobileMenu(false);
+  };
+
+  const handleClearContentType = () => {
+    localStorage.removeItem('selectedContentType');
+    setActiveContentType(null);
   };
 
   return (
@@ -38,8 +54,11 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
         {/* Center section - Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
           {/* HOME */}
-          <Link to="/">
-            <Button variant="ghost" className="gap-2">
+          <Link to="/" onClick={handleClearContentType}>
+            <Button 
+              variant="ghost" 
+              className={`gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-blue-50 text-blue-600' : ''}`}
+            >
               Home
             </Button>
           </Link>
@@ -48,16 +67,16 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
           <div 
             className="relative"
             onMouseEnter={() => {
-    if (exploreTimeoutRef.current) {
-      clearTimeout(exploreTimeoutRef.current);
-    }
-    setShowExploreMenu(true);
-  }}
-  onMouseLeave={() => {
-    exploreTimeoutRef.current = setTimeout(() => {
-      setShowExploreMenu(false);
-    }, 150); // 👈 delay in ms
-  }}
+              if (exploreTimeoutRef.current) {
+                clearTimeout(exploreTimeoutRef.current);
+              }
+              setShowExploreMenu(true);
+            }}
+            onMouseLeave={() => {
+              exploreTimeoutRef.current = setTimeout(() => {
+                setShowExploreMenu(false);
+              }, 150);
+            }}
           >
             <Button variant="ghost" className="gap-2">
               Explore
@@ -68,6 +87,7 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
               <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border bg-white shadow-lg py-1">
                 <Link 
                   to="/"
+                  onClick={handleClearContentType}
                   className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
                 >
                   12th Standard
@@ -80,47 +100,44 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
           {/* NOTES */}
           <Button 
             variant="ghost" 
-            className="gap-2"
+            className={`gap-2 ${activeContentType === 'notes' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
             onClick={() => handleNavigateToContentType('notes')}
           >
-     
             Notes
           </Button>
 
           {/* VIDEOS */}
           <Button 
             variant="ghost" 
-            className="gap-2"
-            onClick={() => handleNavigateToContentType('videos')}
+            className={`gap-2 ${activeContentType === 'videoLectures' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+            onClick={() => handleNavigateToContentType('videoLectures')}
           >
-          
             Videos
           </Button>
 
           {/* MOCK TESTS */}
           <Button 
             variant="ghost" 
-            className="gap-2"
+            className={`gap-2 ${activeContentType === 'mockTests' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
             onClick={() => handleNavigateToContentType('mockTests')}
           >
-      
             Mock Tests
           </Button>
 
           {/* CONTACT - Dropdown */}
           <div 
             className="relative"
-             onMouseEnter={() => {
-    if (contactTimeoutRef.current) {
-      clearTimeout(contactTimeoutRef.current);
-    }
-    setShowContactMenu(true);
-  }}
-  onMouseLeave={() => {
-    contactTimeoutRef.current = setTimeout(() => {
-      setShowContactMenu(false);
-    }, 150);
-  }}
+            onMouseEnter={() => {
+              if (contactTimeoutRef.current) {
+                clearTimeout(contactTimeoutRef.current);
+              }
+              setShowContactMenu(true);
+            }}
+            onMouseLeave={() => {
+              contactTimeoutRef.current = setTimeout(() => {
+                setShowContactMenu(false);
+              }, 150);
+            }}
           >
             <Button variant="ghost" className="gap-2">
               Contact
@@ -224,8 +241,14 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
         <div className="md:hidden border-t bg-white">
           <div className="flex flex-col p-4 gap-2">
             {/* HOME */}
-            <Link to="/" onClick={() => setShowMobileMenu(false)}>
-              <Button variant="ghost" className="w-full justify-start gap-2">
+            <Link to="/" onClick={() => {
+              handleClearContentType();
+              setShowMobileMenu(false);
+            }}>
+              <Button 
+                variant="ghost" 
+                className={`w-full justify-start gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-blue-50 text-blue-600' : ''}`}
+              >
                 <Home className="h-4 w-4" />
                 Home
               </Button>
@@ -234,7 +257,10 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
             {/* EXPLORE */}
             <div className="border-t pt-2">
               <p className="text-xs font-semibold text-gray-500 px-3 mb-2">EXPLORE</p>
-              <Link to="/" onClick={() => setShowMobileMenu(false)}>
+              <Link to="/" onClick={() => {
+                handleClearContentType();
+                setShowMobileMenu(false);
+              }}>
                 <Button variant="ghost" className="w-full justify-start">
                   12th Standard
                 </Button>
@@ -246,7 +272,7 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
               <p className="text-xs font-semibold text-gray-500 px-3 mb-2">QUICK ACCESS</p>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start gap-2"
+                className={`w-full justify-start gap-2 ${activeContentType === 'notes' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
                 onClick={() => handleNavigateToContentType('notes')}
               >
                 <BookOpen className="h-4 w-4" />
@@ -254,15 +280,15 @@ const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start gap-2"
-                onClick={() => handleNavigateToContentType('videos')}
+                className={`w-full justify-start gap-2 ${activeContentType === 'videoLectures' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+                onClick={() => handleNavigateToContentType('videoLectures')}
               >
                 <Video className="h-4 w-4" />
                 Videos
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start gap-2"
+                className={`w-full justify-start gap-2 ${activeContentType === 'mockTests' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
                 onClick={() => handleNavigateToContentType('mockTests')}
               >
                 <ClipboardList className="h-4 w-4" />

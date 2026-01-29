@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { X, Menu, ChevronRight, BookOpen, Video, ClipboardList } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
@@ -43,12 +44,24 @@ export function SubjectContentPage({
   subjectContent,
   loading = false,
 }: SubjectContentPageProps) {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('notes');
   const [activeSubTopic, setActiveSubTopic] = useState(
     subjectContent.subTopics[0]?.id || ""
   );
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+
+  // Check for tab parameter in URL and set active tab
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    console.log("🔍 Tab from URL:", tabFromUrl);
+    
+    if (tabFromUrl && ['notes', 'videoLectures', 'mockTests'].includes(tabFromUrl)) {
+      console.log("✅ Setting active tab to:", tabFromUrl);
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (subjectContent.subTopics.length > 0) {

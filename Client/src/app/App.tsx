@@ -52,7 +52,20 @@ function SubjectsPage() {
 
   const handleSelectSubject = (subjectId: string) => {
     console.log("📌 Subject selected:", subjectId);
-    navigate(`/subject/${subjectId}`);
+    
+    // Check if user clicked Notes/Videos/Mock Tests in navbar
+    const selectedContentType = localStorage.getItem('selectedContentType');
+    
+    if (selectedContentType) {
+      console.log("🎯 Content type selected:", selectedContentType);
+      // Navigate with the tab parameter
+      navigate(`/subject/${subjectId}?tab=${selectedContentType}`);
+      // Clear the stored content type after use
+      localStorage.removeItem('selectedContentType');
+    } else {
+      // Normal navigation without tab parameter
+      navigate(`/subject/${subjectId}`);
+    }
   };
 
   return (
