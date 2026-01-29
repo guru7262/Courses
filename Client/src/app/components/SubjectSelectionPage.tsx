@@ -23,7 +23,7 @@ export function SubjectSelectionPage({
 }: SubjectSelectionPageProps) {
   if (loading) {
     return (
-      <div className="bg-gray-50 p-4 md:p-8 overflow-y-auto">
+      <div className="bg-gray-50 dark:bg-gray-900 p-4 md:p-8 overflow-y-auto">
         <div className="mx-auto max-w-6xl">
           <Skeleton className="h-12 w-64 mb-3" />
           <Skeleton className="h-6 w-96 mb-8" />
@@ -39,11 +39,11 @@ export function SubjectSelectionPage({
 
   return (
     <>
-      <div className="bg-gray-50 p-4 md:p-8">
+      <div className="bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
         <div className="mx-auto max-w-6xl">
           {/* Header */}
           <div className="mb-8">
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 dark:text-gray-300 text-lg">
               12th grade subjects
             </p>
           </div>
@@ -54,7 +54,7 @@ export function SubjectSelectionPage({
               <button
                 key={subject.id}
                 onClick={() => onSelectSubject(subject.id)}
-                className="group relative overflow-hidden rounded-lg border bg-white p-6 text-left shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-left shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
               >
                 {/* Color accent bar */}
                 <div
@@ -71,10 +71,10 @@ export function SubjectSelectionPage({
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                   {subject.name}
                 </h3>
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   {subject.description}
                 </p>
 

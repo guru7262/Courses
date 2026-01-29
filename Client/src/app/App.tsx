@@ -8,6 +8,7 @@ import { Navbar } from "@/app/components/Navbar";
 import { Footer } from "@/app/components/Footer";
 import { SubjectSelectionPage } from "@/app/components/SubjectSelectionPage";
 import { SubjectContentPage } from "@/app/components/SubjectContentPage";
+import { ThemeProvider } from "@/app/components/ThemeProvider";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
 
@@ -195,26 +196,28 @@ export default function App() {
   console.log("API URL:", API_BASE_URL);
 
   return (
-    <BrowserRouter>
-      <div className="flex h-screen flex-col overflow-hidden">
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <>
-                <Navbar showMenuButton={false} />
-                <div className="flex-1 overflow-y-auto">
-                  <SubjectsPage />
-                </div>
-              </>
-            } 
-          />
-          <Route 
-            path="/subject/:subjectId" 
-            element={<SubjectDetailPage />} 
-          />
-        </Routes>
-      </div>
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="light" storageKey="edulearn-theme">
+      <BrowserRouter>
+        <div className="flex h-screen flex-col overflow-hidden">
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                <>
+                  <Navbar showMenuButton={false} />
+                  <div className="flex-1 overflow-y-auto">
+                    <SubjectsPage />
+                  </div>
+                </>
+              } 
+            />
+            <Route 
+              path="/subject/:subjectId" 
+              element={<SubjectDetailPage />} 
+            />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

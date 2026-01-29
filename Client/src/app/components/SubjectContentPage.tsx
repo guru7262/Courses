@@ -101,8 +101,8 @@ export function SubjectContentPage({
       <>
         <div className="flex flex-col md:flex-row">
           {/* Left Skeleton */}
-          <div className="hidden md:flex md:flex-col w-64 border-r bg-white md:h-screen md:sticky md:top-0">
-            <div className="p-4 border-b">
+          <div className="hidden md:flex md:flex-col w-64 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 md:h-screen md:sticky md:top-0">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
               <Skeleton className="h-8 w-32" />
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -113,7 +113,7 @@ export function SubjectContentPage({
           </div>
 
           {/* Main Content Skeleton */}
-          <div className="flex-1 p-4 md:p-6">
+          <div className="flex-1 p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
             <Skeleton className="h-10 w-48 mb-4" />
             <Skeleton className="h-6 w-full mb-2" />
             <Skeleton className="h-6 w-full mb-2" />
@@ -121,8 +121,8 @@ export function SubjectContentPage({
           </div>
 
           {/* Right Skeleton */}
-          <div className="hidden md:flex md:flex-col w-64 border-l bg-white md:h-screen md:sticky md:top-0">
-            <div className="p-4 border-b">
+          <div className="hidden md:flex md:flex-col w-64 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 md:h-screen md:sticky md:top-0">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
               <Skeleton className="h-8 w-32" />
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -141,7 +141,7 @@ export function SubjectContentPage({
     <>
       <div className="flex flex-col md:flex-row relative">
         {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b bg-white flex-shrink-0 sticky top-0 z-20">
+        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 sticky top-0 z-20">
           <Button
             variant="outline"
             size="sm"
@@ -163,16 +163,16 @@ export function SubjectContentPage({
       {/* Left Sidebar - Content Tabs - STICKY POSITION */}
       <aside
         className={`
-          fixed md:sticky md:top-0 inset-y-0 left-0 z-40 w-64 bg-white
+          fixed md:sticky md:top-0 inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900
           transform transition-transform duration-300 ease-in-out
           ${leftSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:flex md:flex-col md:border-r
+          md:translate-x-0 md:flex md:flex-col md:border-r md:border-gray-200 dark:md:border-gray-800
           md:h-screen
         `}
       >
         {/* Mobile close button */}
-        <div className="flex items-center justify-between p-4 border-b md:hidden flex-shrink-0">
-          <h3 className="font-semibold">{subjectContent.subjectName}</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 md:hidden flex-shrink-0">
+          <h3 className="font-semibold dark:text-gray-100">{subjectContent.subjectName}</h3>
           <Button
             variant="ghost"
             size="icon"
@@ -183,8 +183,8 @@ export function SubjectContentPage({
         </div>
 
         {/* Desktop header - FIXED */}
-        <div className="hidden md:flex items-center p-4 border-b flex-shrink-0">
-          <h3 className="font-semibold text-gray-900">{subjectContent.subjectName}</h3>
+        <div className="hidden md:flex items-center p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{subjectContent.subjectName}</h3>
         </div>
 
         {/* Fixed Tabs - SCROLLABLE INDEPENDENTLY */}
@@ -200,8 +200,8 @@ export function SubjectContentPage({
                 w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors mb-1
                 ${
                   activeTab === tab.id
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }
               `}
             >
@@ -213,19 +213,19 @@ export function SubjectContentPage({
       </aside>
 
       {/* Main Content Area - NORMAL FLOW */}
-      <main className="flex-1 bg-gray-50 md:mt-0">
+      <main className="flex-1 bg-gray-50 dark:bg-gray-900 md:mt-0">
         <div className="p-4 md:p-6 max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
             {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name || "Content"}
           </h2>
 
           {/* Notes Tab */}
           {activeTab === 'notes' && (
-            <div className="prose prose-sm md:prose-base max-w-none">
-              <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
+            <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                 {typeof currentContent === 'string' && currentContent.split("\n").map((paragraph, idx) =>
                   paragraph.trim() ? (
-                    <p key={idx} className="mb-4 text-gray-700 leading-relaxed">
+                    <p key={idx} className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
                       {paragraph}
                     </p>
                   ) : null
@@ -239,20 +239,20 @@ export function SubjectContentPage({
             <div className="space-y-4">
               {Array.isArray(currentContent) && currentContent.length > 0 ? (
                 currentContent.map((video: any, idx: number) => (
-                  <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border flex gap-4">
+                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex gap-4">
                     <img 
                       src={video.thumbnail} 
                       alt={video.title}
                       className="w-40 h-24 object-cover rounded"
                     />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{video.title}</h3>
-                      <p className="text-sm text-gray-600">Duration: {video.duration}</p>
+                      <h3 className="font-semibold text-lg mb-1 dark:text-gray-100">{video.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Duration: {video.duration}</p>
                       <a 
                         href={video.url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="mt-2 inline-block text-blue-600 hover:text-blue-800 font-medium"
+                        className="mt-2 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                       >
                         Watch Video →
                       </a>
@@ -260,9 +260,9 @@ export function SubjectContentPage({
                   </div>
                 ))
               ) : (
-                <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-                  <Video className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <p className="text-gray-500">No video lectures available for this topic yet.</p>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+                  <Video className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">No video lectures available for this topic yet.</p>
                 </div>
               )}
             </div>
@@ -273,22 +273,22 @@ export function SubjectContentPage({
             <div className="space-y-4">
               {Array.isArray(currentContent) && currentContent.length > 0 ? (
                 currentContent.map((test: any, idx: number) => (
-                  <div key={idx} className="bg-white rounded-lg p-6 shadow-sm border">
-                    <h3 className="font-semibold text-xl mb-2">{test.title}</h3>
-                    <div className="flex gap-4 text-sm text-gray-600 mb-4">
+                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="font-semibold text-xl mb-2 dark:text-gray-100">{test.title}</h3>
+                    <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
                       <span>⏱️ {test.duration} minutes</span>
                       <span>📊 {test.totalMarks} marks</span>
                       <span>❓ {test.questions?.length || 0} questions</span>
                     </div>
-                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <button className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition">
                       Start Test
                     </button>
                   </div>
                 ))
               ) : (
-                <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-                  <ClipboardList className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <p className="text-gray-500">No mock tests available for this topic yet.</p>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+                  <ClipboardList className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">No mock tests available for this topic yet.</p>
                 </div>
               )}
             </div>
@@ -299,16 +299,16 @@ export function SubjectContentPage({
       {/* Right Sidebar - Sub Topics - STICKY POSITION */}
       <aside
         className={`
-          fixed md:sticky md:top-0 inset-y-0 right-0 z-40 w-64 bg-white
+          fixed md:sticky md:top-0 inset-y-0 right-0 z-40 w-64 bg-white dark:bg-gray-900
           transform transition-transform duration-300 ease-in-out
           ${rightSidebarOpen ? "translate-x-0" : "translate-x-full"}
-          md:translate-x-0 md:flex md:flex-col md:border-l
+          md:translate-x-0 md:flex md:flex-col md:border-l md:border-gray-200 dark:md:border-gray-800
           md:h-screen
         `}
       >
         {/* Mobile close button */}
-        <div className="flex items-center justify-between p-4 border-b md:hidden flex-shrink-0">
-          <h3 className="font-semibold">Sub Topics</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 md:hidden flex-shrink-0">
+          <h3 className="font-semibold dark:text-gray-100">Sub Topics</h3>
           <Button
             variant="ghost"
             size="icon"
@@ -319,8 +319,8 @@ export function SubjectContentPage({
         </div>
 
         {/* Desktop header - FIXED */}
-        <div className="hidden md:flex items-center p-4 border-b flex-shrink-0">
-          <h3 className="font-semibold text-gray-900">Sub Topics</h3>
+        <div className="hidden md:flex items-center p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Sub Topics</h3>
         </div>
 
         {/* Sub Topics List - SCROLLABLE INDEPENDENTLY */}
@@ -336,8 +336,8 @@ export function SubjectContentPage({
                 w-full rounded-lg px-4 py-3 text-left text-sm transition-colors mb-1
                 ${
                   activeSubTopic === subTopic.id
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }
               `}
             >

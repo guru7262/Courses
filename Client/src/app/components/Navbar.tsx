@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, Mail, Github, Linkedin, Youtube } from "lucide-react";
+import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, Mail, Github, Linkedin, Youtube, Moon, Sun } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/app/components/ui/button";
+import { useTheme } from "@/app/components/ThemeProvider";
 import { useRef } from "react";
 
 interface NavbarProps {
@@ -20,6 +21,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
 
   // Check for active content type from localStorage on mount and location change
   useEffect(() => {
@@ -41,12 +43,16 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
     setActiveContentType(null);
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
+    <nav className="sticky top-0 z-50 w-full border-b bg-white dark:bg-gray-900 dark:border-gray-800 shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         {/* Left section - Logo */}
         <div className="flex items-center gap-3">
-          <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
+          <Link to="/" className="text-xl font-bold text-primary dark:text-blue-400 hover:opacity-80 transition-opacity">
             EduLearn
           </Link>
         </div>
@@ -57,7 +63,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           <Link to="/" onClick={handleClearContentType}>
             <Button 
               variant="ghost" 
-              className={`gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-blue-50 text-blue-600' : ''}`}
+              className={`gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}`}
             >
               Home
             </Button>
@@ -84,11 +90,11 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </Button>
             
             {showExploreMenu && (
-              <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border bg-white shadow-lg py-1">
+              <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg py-1">
                 <Link 
                   to="/"
                   onClick={handleClearContentType}
-                  className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors"
                 >
                   12th Standard
                 </Link>
@@ -100,7 +106,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           {/* NOTES */}
           <Button 
             variant="ghost" 
-            className={`gap-2 ${activeContentType === 'notes' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+            className={`gap-2 ${activeContentType === 'notes' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-medium' : ''}`}
             onClick={() => handleNavigateToContentType('notes')}
           >
             Notes
@@ -109,7 +115,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           {/* VIDEOS */}
           <Button 
             variant="ghost" 
-            className={`gap-2 ${activeContentType === 'videoLectures' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+            className={`gap-2 ${activeContentType === 'videoLectures' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-medium' : ''}`}
             onClick={() => handleNavigateToContentType('videoLectures')}
           >
             Videos
@@ -118,7 +124,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           {/* MOCK TESTS */}
           <Button 
             variant="ghost" 
-            className={`gap-2 ${activeContentType === 'mockTests' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+            className={`gap-2 ${activeContentType === 'mockTests' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-medium' : ''}`}
             onClick={() => handleNavigateToContentType('mockTests')}
           >
             Mock Tests
@@ -145,37 +151,37 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </Button>
             
             {showContactMenu && (
-              <div className="absolute top-full right-0 mt-1 w-48 rounded-lg border bg-white shadow-lg py-2">
+              <div className="absolute top-full right-0 mt-1 w-48 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg py-2">
                 <a 
                   href="#" 
-                  className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                    <Youtube className="h-4 w-4 text-red-600" />
+                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <Youtube className="h-4 w-4 text-red-600 dark:text-red-400" />
                   </div>
                   YouTube
                 </a>
                 <a 
                   href="#" 
-                  className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Github className="h-4 w-4 text-gray-800" />
+                  <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    <Github className="h-4 w-4 text-gray-800 dark:text-gray-200" />
                   </div>
                   GitHub
                 </a>
                 <a 
                   href="#" 
-                  className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Linkedin className="h-4 w-4 text-blue-600" />
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Linkedin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   LinkedIn
                 </a>
@@ -214,17 +220,36 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
                   onClick={() => setShowProfileMenu(false)}
                 />
                 {/* Dropdown Card */}
-                <div className="absolute right-0 top-full mt-2 w-48 z-20 overflow-hidden rounded-lg border bg-white shadow-lg">
-                  <div className="p-3 border-b">
-                    <p className="text-sm font-medium">John Doe</p>
-                    <p className="text-xs text-gray-500">john@example.com</p>
+                <div className="absolute right-0 top-full mt-2 w-48 z-20 overflow-hidden rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg">
+                  <div className="p-3 border-b dark:border-gray-700">
+                    <p className="text-sm font-medium dark:text-gray-200">John Doe</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">john@example.com</p>
                   </div>
                   <div className="p-1">
-                    <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-gray-100 transition-colors">
+                    <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors">
                       <User className="h-4 w-4" />
                       Profile
                     </button>
-                    <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                    
+                    {/* Dark Mode Toggle */}
+                    <button 
+                      onClick={toggleTheme}
+                      className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun className="h-4 w-4" />
+                          Light Mode
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="h-4 w-4" />
+                          Dark Mode
+                        </>
+                      )}
+                    </button>
+                    
+                    <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                       <X className="h-4 w-4" />
                       Logout
                     </button>
@@ -238,7 +263,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
 
       {/* Mobile Menu */}
       {showMobileMenu && (
-        <div className="md:hidden border-t bg-white">
+        <div className="md:hidden border-t dark:border-gray-800 bg-white dark:bg-gray-900">
           <div className="flex flex-col p-4 gap-2">
             {/* HOME */}
             <Link to="/" onClick={() => {
@@ -247,7 +272,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             }}>
               <Button 
                 variant="ghost" 
-                className={`w-full justify-start gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-blue-50 text-blue-600' : ''}`}
+                className={`w-full justify-start gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}`}
               >
                 <Home className="h-4 w-4" />
                 Home
@@ -255,24 +280,24 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </Link>
 
             {/* EXPLORE */}
-            <div className="border-t pt-2">
-              <p className="text-xs font-semibold text-gray-500 px-3 mb-2">EXPLORE</p>
+            <div className="border-t dark:border-gray-800 pt-2">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 mb-2">EXPLORE</p>
               <Link to="/" onClick={() => {
                 handleClearContentType();
                 setShowMobileMenu(false);
               }}>
-                <Button variant="ghost" className="w-full justify-start">
+                <Button variant="ghost" className="w-full justify-start dark:text-gray-200">
                   12th Standard
                 </Button>
               </Link>
             </div>
 
             {/* QUICK ACCESS */}
-            <div className="border-t pt-2">
-              <p className="text-xs font-semibold text-gray-500 px-3 mb-2">QUICK ACCESS</p>
+            <div className="border-t dark:border-gray-800 pt-2">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 mb-2">QUICK ACCESS</p>
               <Button 
                 variant="ghost" 
-                className={`w-full justify-start gap-2 ${activeContentType === 'notes' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+                className={`w-full justify-start gap-2 ${activeContentType === 'notes' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-medium' : 'dark:text-gray-200'}`}
                 onClick={() => handleNavigateToContentType('notes')}
               >
                 <BookOpen className="h-4 w-4" />
@@ -280,7 +305,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
               </Button>
               <Button 
                 variant="ghost" 
-                className={`w-full justify-start gap-2 ${activeContentType === 'videoLectures' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+                className={`w-full justify-start gap-2 ${activeContentType === 'videoLectures' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-medium' : 'dark:text-gray-200'}`}
                 onClick={() => handleNavigateToContentType('videoLectures')}
               >
                 <Video className="h-4 w-4" />
@@ -288,7 +313,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
               </Button>
               <Button 
                 variant="ghost" 
-                className={`w-full justify-start gap-2 ${activeContentType === 'mockTests' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+                className={`w-full justify-start gap-2 ${activeContentType === 'mockTests' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 font-medium' : 'dark:text-gray-200'}`}
                 onClick={() => handleNavigateToContentType('mockTests')}
               >
                 <ClipboardList className="h-4 w-4" />
@@ -297,38 +322,38 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </div>
 
             {/* CONTACT */}
-            <div className="border-t pt-2">
-              <p className="text-xs font-semibold text-gray-500 px-3 mb-2">CONTACT</p>
+            <div className="border-t dark:border-gray-800 pt-2">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 mb-2">CONTACT</p>
               <a 
                 href="#" 
-                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 transition-colors rounded"
+                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 transition-colors rounded"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <Youtube className="h-4 w-4 text-red-600" />
+                <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Youtube className="h-4 w-4 text-red-600 dark:text-red-400" />
                 </div>
                 YouTube
               </a>
               <a 
                 href="#" 
-                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 transition-colors rounded"
+                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 transition-colors rounded"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Github className="h-4 w-4 text-gray-800" />
+                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <Github className="h-4 w-4 text-gray-800 dark:text-gray-200" />
                 </div>
                 GitHub
               </a>
               <a 
                 href="#" 
-                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 transition-colors rounded"
+                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 transition-colors rounded"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Linkedin className="h-4 w-4 text-blue-600" />
+                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Linkedin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 LinkedIn
               </a>
