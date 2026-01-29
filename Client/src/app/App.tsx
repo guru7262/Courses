@@ -3,31 +3,27 @@
 declare module "*.css";
 
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { Navbar } from "@/app/components/Navbar";
 import { Footer } from "@/app/components/Footer";
 import { SubjectSelectionPage } from "@/app/components/SubjectSelectionPage";
 import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 
-type AppView = "subjects" | "content";
-
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
 
-export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>("subjects");
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // Changed to true initially
+function SubjectsPage() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState([]);
-  const [subjectContent, setSubjectContent] = useState(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("=== App mounted ===");
-    console.log("API URL:", API_BASE_URL);
+    console.log("=== SubjectsPage mounted ===");
     fetchSubjects();
   }, []);
 
   const fetchSubjects = async () => {
-    console.log("🔄 Fetching subjects...");
+    console.log("📄 Fetching subjects...");
     try {
       setLoading(true);
       setError(null);
@@ -54,13 +50,61 @@ export default function App() {
     }
   };
 
-const fetchSubjectContent = async (subjectId: string) => {
-    console.log("🔄 Fetching content for:", subjectId);
+  const handleSelectSubject = (subjectId: string) => {
+    console.log("📌 Subject selected:", subjectId);
+    navigate(`/subject/${subjectId}`);
+  };
+
+  return (
+    <>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mx-4 mt-4 rounded">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
+          <p className="text-sm mt-2">Check console (F12) for details</p>
+          <button 
+            onClick={() => {
+              console.log("🔄 Retry clicked");
+              fetchSubjects();
+            }}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      <SubjectSelectionPage
+        subjects={subjects}
+        loading={loading}
+        onSelectSubject={handleSelectSubject}
+      />
+    </>
+  );
+}
+
+function SubjectDetailPage() {
+  const { subjectId } = useParams<{ subjectId: string }>();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [subjectContent, setSubjectContent] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log("=== SubjectDetailPage mounted ===");
+    console.log("Subject ID from URL:", subjectId);
+    if (subjectId) {
+      fetchSubjectContent(subjectId);
+    }
+  }, [subjectId]);
+
+  const fetchSubjectContent = async (id: string) => {
+    console.log("📄 Fetching content for:", id);
     try {
       setLoading(true);
       setError(null);
       
-      const url = `${API_BASE_URL}/subjects/${subjectId}`;
+      const url = `${API_BASE_URL}/subjects/${id}`;
       console.log("Fetching from:", url);
       
       const response = await fetch(url);
@@ -92,33 +136,18 @@ const fetchSubjectContent = async (subjectId: string) => {
     }
   };
 
-  const handleSelectSubject = async (subjectId: string) => {
-    console.log("📌 Subject selected:", subjectId);
-    setSelectedSubject(subjectId);
-    await fetchSubjectContent(subjectId);
-    setCurrentView("content");
-  };
-
   const handleBackToSubjects = () => {
     console.log("⬅️ Back to subjects");
-    setCurrentView("subjects");
-    setSelectedSubject(null);
-    setSubjectContent(null);
+    navigate('/');
   };
 
-  // Debug render
-  console.log("=== Render ===");
-  console.log("Loading:", loading);
-  console.log("Subjects count:", subjects.length);
-  console.log("Error:", error);
-  console.log("Current view:", currentView);
-
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <>
       <Navbar
         onMenuClick={handleBackToSubjects}
-        showMenuButton={currentView === "content"}
+        showMenuButton={true}
       />
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mx-4 mt-4 rounded">
           <p className="font-bold">Error</p>
@@ -127,7 +156,7 @@ const fetchSubjectContent = async (subjectId: string) => {
           <button 
             onClick={() => {
               console.log("🔄 Retry clicked");
-              fetchSubjects();
+              if (subjectId) fetchSubjectContent(subjectId);
             }}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
@@ -136,24 +165,43 @@ const fetchSubjectContent = async (subjectId: string) => {
         </div>
       )}
 
-       <div className="flex-1 overflow-y-auto">
-    {currentView === "subjects" && (
-      <SubjectSelectionPage
-        subjects={subjects}
-        loading={loading}
-        onSelectSubject={handleSelectSubject}
-      />
-    )}
+      <div className="flex-1 overflow-y-auto">
+        {subjectContent && (
+          <SubjectContentPage
+            subjectContent={subjectContent}
+            loading={loading}
+          />
+        )}
+      </div>
+    </>
+  );
+}
 
-    {currentView === "content" && subjectContent && (
-      <SubjectContentPage
-        subjectContent={subjectContent}
-        loading={loading}
-      />
-    )}
-  </div>
+export default function App() {
+  console.log("=== App Component Rendered ===");
+  console.log("API URL:", API_BASE_URL);
 
-      <Footer />
-    </div>
+  return (
+    <BrowserRouter>
+      <div className="flex h-screen flex-col overflow-hidden">
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <>
+                <Navbar showMenuButton={false} />
+                <div className="flex-1 overflow-y-auto">
+                  <SubjectsPage />
+                </div>
+              </>
+            } 
+          />
+          <Route 
+            path="/subject/:subjectId" 
+            element={<SubjectDetailPage />} 
+          />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }

@@ -1,15 +1,14 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { X, Menu, ChevronRight, BookOpen, Video, ClipboardList } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
-
+import { Footer } from "@/app/components/Footer";
 
 interface SubTopic {
   content: any;
   id: string;
   name: string;
 }
-
 
 interface SubjectContent {
   subjectId: string;
@@ -57,106 +56,110 @@ export function SubjectContentPage({
     }
   }, [subjectContent]);
 
-const activeSubTopicData = subjectContent.subTopics.find(
-  (s) => s.id === activeSubTopic
-);
+  const activeSubTopicData = subjectContent.subTopics.find(
+    (s) => s.id === activeSubTopic
+  );
+
   // Get current content based on active tab and subtopic
- const getCurrentContent = () => {
-  if (!activeSubTopicData) return null;
+  const getCurrentContent = () => {
+    if (!activeSubTopicData) return null;
 
-  const content = activeSubTopicData.content;
+    const content = activeSubTopicData.content;
 
-  switch (activeTab) {
-    case "notes":
-      return content?.notes || "No notes available yet.";
+    switch (activeTab) {
+      case "notes":
+        return content?.notes || "No notes available yet.";
 
-    case "videoLectures":
-      return content?.videoLectures || [];
+      case "videoLectures":
+        return content?.videoLectures || [];
 
-    case "mockTests":
-      return content?.mockTests || [];
+      case "mockTests":
+        return content?.mockTests || [];
 
-    default:
-      return null;
-  }
-};
-
+      default:
+        return null;
+    }
+  };
 
   const currentContent = getCurrentContent();
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left Skeleton */}
-        <div className="hidden md:flex md:flex-col w-64 border-r bg-white">
-          <div className="p-4 border-b">
-            <Skeleton className="h-8 w-32" />
+      <>
+        <div className="flex flex-col md:flex-row">
+          {/* Left Skeleton */}
+          <div className="hidden md:flex md:flex-col w-64 border-r bg-white md:h-screen md:sticky md:top-0">
+            <div className="p-4 border-b">
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full mb-2" />
+              ))}
+            </div>
           </div>
-          <div className="flex-1 overflow-auto p-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full mb-2" />
-            ))}
-          </div>
-        </div>
 
-        {/* Main Content Skeleton */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
-          <Skeleton className="h-10 w-48 mb-4" />
-          <Skeleton className="h-6 w-full mb-2" />
-          <Skeleton className="h-6 w-full mb-2" />
-          <Skeleton className="h-6 w-3/4 mb-4" />
-        </div>
+          {/* Main Content Skeleton */}
+          <div className="flex-1 p-4 md:p-6">
+            <Skeleton className="h-10 w-48 mb-4" />
+            <Skeleton className="h-6 w-full mb-2" />
+            <Skeleton className="h-6 w-full mb-2" />
+            <Skeleton className="h-6 w-3/4 mb-4" />
+          </div>
 
-        {/* Right Skeleton */}
-        <div className="hidden md:flex md:flex-col w-64 border-l bg-white">
-          <div className="p-4 border-b">
-            <Skeleton className="h-8 w-32" />
-          </div>
-          <div className="flex-1 overflow-auto p-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-10 w-full mb-2" />
-            ))}
+          {/* Right Skeleton */}
+          <div className="hidden md:flex md:flex-col w-64 border-l bg-white md:h-screen md:sticky md:top-0">
+            <div className="p-4 border-b">
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-10 w-full mb-2" />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b bg-white flex-shrink-0">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setLeftSidebarOpen(true)}
-        >
-          <Menu className="h-4 w-4 mr-2" />
-          {FIXED_TABS.find((t) => t.id === activeTab)?.name}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setRightSidebarOpen(true)}
-        >
-          {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name}
-          <ChevronRight className="h-4 w-4 ml-2" />
-        </Button>
-      </div>
+    <>
+      <div className="flex flex-col md:flex-row relative">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b bg-white flex-shrink-0 sticky top-0 z-20">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLeftSidebarOpen(true)}
+          >
+            <Menu className="h-4 w-4 mr-2" />
+            {FIXED_TABS.find((t) => t.id === activeTab)?.name}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setRightSidebarOpen(true)}
+          >
+            {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name}
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
 
-      {/* Left Sidebar - Content Tabs */}
+      {/* Left Sidebar - Content Tabs - STICKY POSITION */}
       <aside
         className={`
-          fixed md:relative inset-y-0 left-0 z-40 w-64 bg-white
+          fixed md:sticky md:top-0 inset-y-0 left-0 z-40 w-64 bg-white
           transform transition-transform duration-300 ease-in-out
           ${leftSidebarOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:flex md:flex-col md:border-r
-          h-full
+          md:h-screen
         `}
       >
         {/* Mobile close button */}
         <div className="flex items-center justify-between p-4 border-b md:hidden flex-shrink-0">
-          <h3 className="font-semibold">Content Type</h3>
+          <h3 className="font-semibold">{subjectContent.subjectName}</h3>
           <Button
             variant="ghost"
             size="icon"
@@ -166,12 +169,12 @@ const activeSubTopicData = subjectContent.subTopics.find(
           </Button>
         </div>
 
-        {/* Desktop header */}
+        {/* Desktop header - FIXED */}
         <div className="hidden md:flex items-center p-4 border-b flex-shrink-0">
-          <h3 className="font-semibold text-gray-900">Content Type</h3>
+          <h3 className="font-semibold text-gray-900">{subjectContent.subjectName}</h3>
         </div>
 
-        {/* Fixed Tabs */}
+        {/* Fixed Tabs - SCROLLABLE INDEPENDENTLY */}
         <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
           {FIXED_TABS.map((tab) => (
             <button
@@ -196,98 +199,98 @@ const activeSubTopicData = subjectContent.subTopics.find(
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 content-scroll">
-        <div className="p-4 md:p-6 max-w-4xl mx-auto custom-scroll overflow-y-auto">
-  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-    {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name || "Content"}
-  </h2>
+      {/* Main Content Area - NORMAL FLOW */}
+      <main className="flex-1 bg-gray-50 md:mt-0">
+        <div className="p-4 md:p-6 max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+            {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name || "Content"}
+          </h2>
 
-  {/* Notes Tab */}
-  {activeTab === 'notes' && (
-    <div className="prose prose-sm md:prose-base max-w-none">
-      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
-        {typeof currentContent === 'string' && currentContent.split("\n").map((paragraph, idx) =>
-          paragraph.trim() ? (
-            <p key={idx} className="mb-4 text-gray-700 leading-relaxed">
-              {paragraph}
-            </p>
-          ) : null
-        )}
-      </div>
-    </div>
-  )}
-
-  {/* Video Lectures Tab */}
-  {activeTab === 'videoLectures' && (
-    <div className="space-y-4">
-      {Array.isArray(currentContent) && currentContent.length > 0 ? (
-        currentContent.map((video: any, idx: number) => (
-          <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border flex gap-4">
-            <img 
-              src={video.thumbnail} 
-              alt={video.title}
-              className="w-40 h-24 object-cover rounded"
-            />
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg mb-1">{video.title}</h3>
-              <p className="text-sm text-gray-600">Duration: {video.duration}</p>
-              <a 
-                href={video.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Watch Video →
-              </a>
+          {/* Notes Tab */}
+          {activeTab === 'notes' && (
+            <div className="prose prose-sm md:prose-base max-w-none">
+              <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
+                {typeof currentContent === 'string' && currentContent.split("\n").map((paragraph, idx) =>
+                  paragraph.trim() ? (
+                    <p key={idx} className="mb-4 text-gray-700 leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ) : null
+                )}
+              </div>
             </div>
-          </div>
-        ))
-      ) : (
-        <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-          <Video className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-          <p className="text-gray-500">No video lectures available for this topic yet.</p>
-        </div>
-      )}
-    </div>
-  )}
+          )}
 
-  {/* Mock Tests Tab */}
-  {activeTab === 'mockTests' && (
-    <div className="space-y-4">
-      {Array.isArray(currentContent) && currentContent.length > 0 ? (
-        currentContent.map((test: any, idx: number) => (
-          <div key={idx} className="bg-white rounded-lg p-6 shadow-sm border">
-            <h3 className="font-semibold text-xl mb-2">{test.title}</h3>
-            <div className="flex gap-4 text-sm text-gray-600 mb-4">
-              <span>⏱️ {test.duration} minutes</span>
-              <span>📊 {test.totalMarks} marks</span>
-              <span>❓ {test.questions?.length || 0} questions</span>
+          {/* Video Lectures Tab */}
+          {activeTab === 'videoLectures' && (
+            <div className="space-y-4">
+              {Array.isArray(currentContent) && currentContent.length > 0 ? (
+                currentContent.map((video: any, idx: number) => (
+                  <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border flex gap-4">
+                    <img 
+                      src={video.thumbnail} 
+                      alt={video.title}
+                      className="w-40 h-24 object-cover rounded"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1">{video.title}</h3>
+                      <p className="text-sm text-gray-600">Duration: {video.duration}</p>
+                      <a 
+                        href={video.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Watch Video →
+                      </a>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
+                  <Video className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500">No video lectures available for this topic yet.</p>
+                </div>
+              )}
             </div>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-              Start Test
-            </button>
-          </div>
-        ))
-      ) : (
-        <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-          <ClipboardList className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-          <p className="text-gray-500">No mock tests available for this topic yet.</p>
+          )}
+
+          {/* Mock Tests Tab */}
+          {activeTab === 'mockTests' && (
+            <div className="space-y-4">
+              {Array.isArray(currentContent) && currentContent.length > 0 ? (
+                currentContent.map((test: any, idx: number) => (
+                  <div key={idx} className="bg-white rounded-lg p-6 shadow-sm border">
+                    <h3 className="font-semibold text-xl mb-2">{test.title}</h3>
+                    <div className="flex gap-4 text-sm text-gray-600 mb-4">
+                      <span>⏱️ {test.duration} minutes</span>
+                      <span>📊 {test.totalMarks} marks</span>
+                      <span>❓ {test.questions?.length || 0} questions</span>
+                    </div>
+                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                      Start Test
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
+                  <ClipboardList className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-gray-500">No mock tests available for this topic yet.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  )}
-</div>
       </main>
 
-      {/* Right Sidebar - Sub Topics */}
+      {/* Right Sidebar - Sub Topics - STICKY POSITION */}
       <aside
         className={`
-          fixed md:relative inset-y-0 right-0 z-40 w-64 bg-white
+          fixed md:sticky md:top-0 inset-y-0 right-0 z-40 w-64 bg-white
           transform transition-transform duration-300 ease-in-out
           ${rightSidebarOpen ? "translate-x-0" : "translate-x-full"}
           md:translate-x-0 md:flex md:flex-col md:border-l
-          h-full
+          md:h-screen
         `}
       >
         {/* Mobile close button */}
@@ -302,12 +305,12 @@ const activeSubTopicData = subjectContent.subTopics.find(
           </Button>
         </div>
 
-        {/* Desktop header */}
+        {/* Desktop header - FIXED */}
         <div className="hidden md:flex items-center p-4 border-b flex-shrink-0">
           <h3 className="font-semibold text-gray-900">Sub Topics</h3>
         </div>
 
-        {/* Sub Topics List */}
+        {/* Sub Topics List - SCROLLABLE INDEPENDENTLY */}
         <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
           {subjectContent.subTopics.map((subTopic) => (
             <button
@@ -342,5 +345,9 @@ const activeSubTopicData = subjectContent.subTopics.find(
         />
       )}
     </div>
+
+    {/* Footer at the bottom - full width, outside the three-column layout */}
+    <Footer />
+  </>
   );
 }
