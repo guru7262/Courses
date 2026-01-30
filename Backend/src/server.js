@@ -18,10 +18,10 @@ app.get('/test', (req, res) => {
 connectDB();
 
 // Import routes
-const subjectsRouter = require('./routes/subjects');
+const categoriesRouter = require('./routes/categories');
 
 // Use routes
-app.use('/api/subjects', subjectsRouter);
+app.use('/api/categories', categoriesRouter);
 
 // Test API route
 app.get('/api', (req, res) => {

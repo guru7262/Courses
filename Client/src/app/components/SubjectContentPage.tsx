@@ -305,6 +305,7 @@ export function SubjectContentPage({
           />
         )}
       </div>
+      
       <Footer />
     </>
   );

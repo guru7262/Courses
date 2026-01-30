@@ -15,21 +15,21 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localho
 function SubjectsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [subjects, setSubjects] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("=== SubjectsPage mounted ===");
-    fetchSubjects();
+    fetchCategories();
   }, []);
 
-  const fetchSubjects = async () => {
-    console.log("📄 Fetching subjects...");
+  const fetchCategories = async () => {
+    console.log("📄 Fetching categories...");
     try {
       setLoading(true);
       setError(null);
       
-      const url = `${API_BASE_URL}/subjects`;
+      const url = `${API_BASE_URL}/categories`;
       console.log("Fetching from:", url);
       
       const response = await fetch(url);
@@ -40,12 +40,12 @@ function SubjectsPage() {
       }
       
       const data = await response.json();
-      console.log("✅ Subjects loaded:", data);
-      setSubjects(data);
+      console.log("✅ Categories loaded:", data);
+      setCategories(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      console.error("❌ Error fetching subjects:", err);
-      setError(`Failed to load subjects: ${errorMessage}`);
+      console.error("❌ Error fetching categories:", err);
+      setError(`Failed to load categories: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ function SubjectsPage() {
           <button 
             onClick={() => {
               console.log("🔄 Retry clicked");
-              fetchSubjects();
+              fetchCategories();
             }}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
@@ -89,7 +89,7 @@ function SubjectsPage() {
       )}
 
       <SubjectSelectionPage
-        subjects={subjects}
+        categories={categories}
         loading={loading}
         onSelectSubject={handleSelectSubject}
       />
@@ -118,7 +118,7 @@ function SubjectDetailPage() {
       setLoading(true);
       setError(null);
       
-      const url = `${API_BASE_URL}/subjects/${id}`;
+      const url = `${API_BASE_URL}/categories/subject/${id}`;
       console.log("Fetching from:", url);
       
       const response = await fetch(url);
@@ -134,9 +134,8 @@ function SubjectDetailPage() {
       const transformedContent = {
         subjectId: data.id,
         subjectName: data.name,
-        tabs: data.tabs || [],
         subTopics: data.subTopics || [],
-        content: data.content || {}
+        category: data.category
       };
       
       console.log("Transformed:", transformedContent);

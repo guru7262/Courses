@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, Mail, Github, Linkedin, Youtube, Moon, Sun } from "lucide-react";
+import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, ChevronRight, Mail, Github, Linkedin, Youtube, Moon, Sun } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/app/components/ui/button";
 import { useTheme } from "@/app/components/ThemeProvider";
@@ -10,17 +10,32 @@ interface NavbarProps {
   showMenuButton?: boolean;
 }
 
+interface Subject {
+  id: string;
+  name: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  subjects: Subject[];
+}
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
+
 export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showExploreMenu, setShowExploreMenu] = useState(false);
   const [showContactMenu, setShowContactMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showMobileExplore, setShowMobileExplore] = useState(false);
-  const [showMobileQuickAccess, setShowMobileQuickAccess] = useState(true);
-  const [showMobileContact, setShowMobileContact] = useState(false);
+  const [expandedCategoryDesktop, setExpandedCategoryDesktop] = useState<string | null>(null);
+  const [expandedCategoryMobile, setExpandedCategoryMobile] = useState<string | null>(null);
   const [activeContentType, setActiveContentType] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  
   const exploreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +45,22 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
     const storedContentType = localStorage.getItem('selectedContentType');
     setActiveContentType(storedContentType);
   }, [location]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`);
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
 
   const handleNavigateToContentType = (contentType: string) => {
     localStorage.setItem('selectedContentType', contentType);
@@ -43,21 +74,44 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
     setActiveContentType(null);
   };
 
+  const handleSubjectClick = (subjectId: string) => {
+    const selectedContentType = localStorage.getItem('selectedContentType');
+    if (selectedContentType) {
+      navigate(`/subject/${subjectId}?tab=${selectedContentType}`);
+    } else {
+      navigate(`/subject/${subjectId}`);
+    }
+    setShowExploreMenu(false);
+    setShowMobileMenu(false);
+  };
+
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background border-border shadow-sm">
+    <nav className=" relative sticky top-0 z-50 w-full border-b bg-background border-border shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
-        {/* Left section - Logo */}
+        
+  <div
+  className="pointer-events-none absolute inset-x-0 -bottom-20 h-64
+             bg-gradient-to-b from-primary/30 via-primary/10 to-transparent
+             blur-3xl opacity-40"
+/>
+<div className="absolute inset-x-0 bottom-0 h-px 
+                bg-gradient-to-r from-transparent via-primary to-transparent 
+                opacity-60" />
+
+
+        
+        {/* Logo */}
         <div className="flex items-center gap-3">
           <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
             EduLearn
           </Link>
         </div>
 
-        {/* Center section - Desktop Navigation */}
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
           {/* HOME */}
           <Link to="/" onClick={handleClearContentType}>
@@ -69,7 +123,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </Button>
           </Link>
 
-          {/* EXPLORE - Dropdown */}
+          {/* EXPLORE - Nested Dropdown */}
           <div 
             className="relative"
             onMouseEnter={() => {
@@ -77,7 +131,10 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
               setShowExploreMenu(true);
             }}
             onMouseLeave={() => {
-              exploreTimeoutRef.current = setTimeout(() => setShowExploreMenu(false), 150);
+              exploreTimeoutRef.current = setTimeout(() => {
+                setShowExploreMenu(false);
+                setExpandedCategoryDesktop(null);
+              }, 150);
             }}
           >
             <Button variant="ghost" className="gap-2 text-foreground">
@@ -86,14 +143,42 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             </Button>
             
             {showExploreMenu && (
-              <div className="absolute top-full left-0 mt-1 w-48 rounded-lg border bg-popover border-border text-popover-foreground shadow-lg py-1">
-                <Link 
-                  to="/"
-                  onClick={handleClearContentType}
-                  className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                >
-                  12th Standard
-                </Link>
+              <div className="absolute top-full left-0 mt-1 w-56 rounded-lg border bg-popover border-border text-popover-foreground shadow-lg py-1">
+                {categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
+                      setExpandedCategoryDesktop(category.id);
+                    }}
+                    onMouseLeave={() => {
+                      categoryTimeoutRef.current = setTimeout(() => {
+                        setExpandedCategoryDesktop(null);
+                      }, 150);
+                    }}
+                  >
+                    <div className="flex items-center justify-between px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                      <span>{category.name}</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </div>
+                    
+                    {/* Nested subjects dropdown */}
+                    {expandedCategoryDesktop === category.id && (
+                      <div className="absolute left-full top-0 ml-1 w-48 rounded-lg border bg-popover border-border text-popover-foreground shadow-lg py-1">
+                        {category.subjects.map((subject) => (
+                          <button
+                            key={subject.id}
+                            onClick={() => handleSubjectClick(subject.id)}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                          >
+                            {subject.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -125,7 +210,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             Mock Tests
           </Button>
 
-          {/* CONTACT - Dropdown */}
+          {/* CONTACT */}
           <div 
             className="relative"
             onMouseEnter={() => {
@@ -166,7 +251,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           </div>
         </div>
 
-        {/* Right section - Profile + Mobile Menu */}
+        {/* Profile + Mobile Menu */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden text-foreground">
             {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -220,78 +305,70 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
               </Button>
             </Link>
 
-            {/* EXPLORE - Expandable */}
+            {/* EXPLORE - Expandable Categories */}
             <div className="border-t border-border pt-2">
-              <button 
-                onClick={() => setShowMobileExplore(!showMobileExplore)}
-                className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-muted-foreground"
-              >
-                EXPLORE
-                <ChevronDown className={`h-3 w-3 transition-transform ${showMobileExplore ? "rotate-180" : ""}`} />
-              </button>
-              {showMobileExplore && (
-                <div className="pl-4 space-y-1 mt-1">
-                  <Link to="/" onClick={() => setShowMobileMenu(false)} className="block px-3 py-2 text-sm hover:bg-accent rounded-md">
-                    12th Standard
-                  </Link>
+              <p className="text-xs font-semibold text-muted-foreground px-3 mb-2">EXPLORE</p>
+              {categories.map((category) => (
+                <div key={category.id} className="mb-2">
+                  <button
+                    onClick={() => setExpandedCategoryMobile(expandedCategoryMobile === category.id ? null : category.id)}
+                    className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
+                  >
+                    {category.name}
+                    <ChevronDown className={`h-4 w-4 transition-transform ${expandedCategoryMobile === category.id ? "rotate-180" : ""}`} />
+                  </button>
+                  {expandedCategoryMobile === category.id && (
+                    <div className="pl-4 space-y-1 mt-1">
+                      {category.subjects.map((subject) => (
+                        <button
+                          key={subject.id}
+                          onClick={() => handleSubjectClick(subject.id)}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors"
+                        >
+                          {subject.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
 
-            {/* QUICK ACCESS (Notes, Videos, etc.) ... */}
-<div className="border-t border-border pt-2">
-              <button 
-                onClick={() => setShowMobileQuickAccess(!showMobileQuickAccess)}
-                className="flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider"
-              >
-                Quick Access <ChevronDown className={`h-3 w-3 transition-transform ${showMobileQuickAccess ? "rotate-180" : ""}`} />
-              </button>
-              {showMobileQuickAccess && (
-                <div className="pl-2 mt-1 space-y-1">
-                  <Button variant="ghost" className={`w-full justify-start gap-3 ${activeContentType === 'notes' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('notes')}>
-                    <BookOpen className="h-4 w-4" /> Notes
-                  </Button>
-                  <Button variant="ghost" className={`w-full justify-start gap-3 ${activeContentType === 'videoLectures' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('videoLectures')}>
-                    <Video className="h-4 w-4" /> Videos
-                  </Button>
-                  <Button variant="ghost" className={`w-full justify-start gap-3 ${activeContentType === 'mockTests' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('mockTests')}>
-                    <ClipboardList className="h-4 w-4" /> Mock Tests
-                  </Button>
-                </div>
-              )}
-            </div>
-            {/* CONTACT - Expandable */}
+            {/* QUICK ACCESS */}
             <div className="border-t border-border pt-2">
-              <button 
-                onClick={() => setShowMobileContact(!showMobileContact)}
-                className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-muted-foreground"
-              >
-                CONTACT
-                <ChevronDown className={`h-3 w-3 transition-transform ${showMobileContact ? "rotate-180" : ""}`} />
-              </button>
-              
-              {showMobileContact && (
-                <div className="pl-2 space-y-1 mt-1">
-                  <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
-                      <Youtube className="h-4 w-4 text-destructive" />
-                    </div>
-                    YouTube
-                  </a>
-                  <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <Github className="h-4 w-4 text-foreground" />
-                    </div>
-                    GitHub
-                  </a>
-                  <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Linkedin className="h-4 w-4 text-primary" />
-                    </div>
-                    LinkedIn
-                  </a>
+              <p className="text-xs font-semibold text-muted-foreground px-3 mb-2">QUICK ACCESS</p>
+              <Button variant="ghost" className={`w-full justify-start gap-2 ${activeContentType === 'notes' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('notes')}>
+                <BookOpen className="h-4 w-4" /> Notes
+              </Button>
+              <Button variant="ghost" className={`w-full justify-start gap-2 ${activeContentType === 'videoLectures' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('videoLectures')}>
+                <Video className="h-4 w-4" /> Videos
+              </Button>
+              <Button variant="ghost" className={`w-full justify-start gap-2 ${activeContentType === 'mockTests' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('mockTests')}>
+                <ClipboardList className="h-4 w-4" /> Mock Tests
+              </Button>
+            </div>
+
+            {/* CONTACT */}
+            <div className="border-t border-border pt-2">
+              <p className="text-xs font-semibold text-muted-foreground px-3 mb-2">CONTACT</p>
+              <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
+                <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <Youtube className="h-4 w-4 text-destructive" />
                 </div>
-              )}
+                YouTube
+              </a>
+              <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <Github className="h-4 w-4 text-foreground" />
+                </div>
+                GitHub
+              </a>
+              <a href="#" className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-accent rounded-md transition-colors">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Linkedin className="h-4 w-4 text-primary" />
+                </div>
+                LinkedIn
+              </a>
             </div>
           </div>
         </div>
