@@ -3,6 +3,7 @@ import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, Chevr
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/app/components/ui/button";
 import { useTheme } from "@/app/components/ThemeProvider";
+import { NotificationBell } from "@/app/components/notifications/NotificationBell";
 import { useRef } from "react";
 
 interface NavbarProps {
@@ -21,7 +22,7 @@ interface Category {
   subjects: Subject[];
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
 
 export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -254,8 +255,13 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
           </div>
         </div>
 
-        {/* Profile + Mobile Menu */}
+        {/* Right section - Notifications + Profile + Mobile Menu */}
         <div className="flex items-center gap-2">
+          {/* Notification Bell - Hidden on mobile */}
+          <div className="md:block">
+            <NotificationBell apiUrl={API_BASE_URL} />
+          </div>
+
           <Button variant="ghost" size="icon" onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden text-foreground">
             {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>

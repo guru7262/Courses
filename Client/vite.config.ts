@@ -25,7 +25,7 @@ export default defineConfig({
     },
     // ADD THIS BLOCK: This ensures the frontend doesn't break when trying to connect back to your PC
     hmr: {
-      clientPort: 443,
+      clientPort: 5173,
     },
   }
 })

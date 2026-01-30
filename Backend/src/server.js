@@ -19,9 +19,11 @@ connectDB();
 
 // Import routes
 const categoriesRouter = require('./routes/categories');
+const notificationsRouter = require('./routes/notifications');
 
 // Use routes
 app.use('/api/categories', categoriesRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // Test API route
 app.get('/api', (req, res) => {

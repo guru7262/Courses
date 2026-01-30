@@ -9,6 +9,7 @@ import { Footer } from "@/app/components/Footer";
 import { SubjectSelectionPage } from "@/app/components/SubjectSelectionPage";
 import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
+import { NotificationBanner } from "@/app/components/notifications/NotificationBanner";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
 
@@ -204,6 +205,7 @@ export default function App() {
               element={
                 <>
                   <Navbar showMenuButton={false} />
+                  <NotificationBanner apiUrl={API_BASE_URL} />
                   <div className="flex-1 overflow-y-auto">
                     <SubjectsPage />
                   </div>
