@@ -1,4 +1,9 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '/api/categories';
+
+const requestHeaders = {
+  'Content-Type': 'application/json',
+  'ngrok-skip-browser-warning': 'true' // This is the magic line
+};
 
 export const subjectsAPI = {
   getAllSubjects: async () => {

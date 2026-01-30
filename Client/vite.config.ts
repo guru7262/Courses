@@ -5,17 +5,27 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
-      // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
-    allowedHosts: ['tyronic-lashawn-nonproportional.ngrok-free.dev'],}
+    // 'all' is safer for testing so you don't have to update it if the URL changes
+    allowedHosts: true, 
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+    // ADD THIS BLOCK: This ensures the frontend doesn't break when trying to connect back to your PC
+    hmr: {
+      clientPort: 443,
+    },
+  }
 })

@@ -10,7 +10,7 @@ import { SubjectSelectionPage } from "@/app/components/SubjectSelectionPage";
 import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5000/api";
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
 
 function SubjectsPage() {
   const navigate = useNavigate();
