@@ -93,15 +93,18 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
     <nav className=" relative sticky top-0 z-50 w-full border-b bg-background border-border shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         
+        {/*glow effect*/}
+<div className="absolute inset-0 overflow-hidden pointer-events-none">
   <div
   className="pointer-events-none absolute inset-x-0 -bottom-20 h-64
              bg-gradient-to-b from-primary/30 via-primary/10 to-transparent
              blur-3xl opacity-40"
 />
+
 <div className="absolute inset-x-0 bottom-0 h-px 
                 bg-gradient-to-r from-transparent via-primary to-transparent 
                 opacity-60" />
-
+</div>
 
         
         {/* Logo */}
