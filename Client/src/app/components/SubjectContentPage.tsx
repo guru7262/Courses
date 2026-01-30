@@ -33,7 +33,6 @@ interface SubjectContentPageProps {
   loading?: boolean;
 }
 
-// Fixed tabs - these will always be the same
 const FIXED_TABS = [
   { id: 'notes', name: 'Notes', icon: <BookOpen className="h-5 w-5" /> },
   { id: 'videoLectures', name: 'Video Lectures', icon: <Video className="h-5 w-5" /> },
@@ -52,13 +51,9 @@ export function SubjectContentPage({
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
 
-  // Check for tab parameter in URL and set active tab
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    console.log("🔍 Tab from URL:", tabFromUrl);
-    
     if (tabFromUrl && ['notes', 'videoLectures', 'mockTests'].includes(tabFromUrl)) {
-      console.log("✅ Setting active tab to:", tabFromUrl);
       setActiveTab(tabFromUrl);
     }
   }, [searchParams]);
@@ -73,24 +68,14 @@ export function SubjectContentPage({
     (s) => s.id === activeSubTopic
   );
 
-  // Get current content based on active tab and subtopic
   const getCurrentContent = () => {
     if (!activeSubTopicData) return null;
-
     const content = activeSubTopicData.content;
-
     switch (activeTab) {
-      case "notes":
-        return content?.notes || "No notes available yet.";
-
-      case "videoLectures":
-        return content?.videoLectures || [];
-
-      case "mockTests":
-        return content?.mockTests || [];
-
-      default:
-        return null;
+      case "notes": return content?.notes || "No notes available yet.";
+      case "videoLectures": return content?.videoLectures || [];
+      case "mockTests": return content?.mockTests || [];
+      default: return null;
     }
   };
 
@@ -100,9 +85,8 @@ export function SubjectContentPage({
     return (
       <>
         <div className="flex flex-col md:flex-row">
-          {/* Left Skeleton */}
-          <div className="hidden md:flex md:flex-col w-64 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 md:h-screen md:sticky md:top-0">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="hidden md:flex md:flex-col w-64 border-r border-border bg-background md:h-screen md:sticky md:top-0">
+            <div className="p-4 border-b border-border">
               <Skeleton className="h-8 w-32" />
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -111,18 +95,14 @@ export function SubjectContentPage({
               ))}
             </div>
           </div>
-
-          {/* Main Content Skeleton */}
-          <div className="flex-1 p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
+          <div className="flex-1 p-4 md:p-6 bg-background">
             <Skeleton className="h-10 w-48 mb-4" />
             <Skeleton className="h-6 w-full mb-2" />
             <Skeleton className="h-6 w-full mb-2" />
             <Skeleton className="h-6 w-3/4 mb-4" />
           </div>
-
-          {/* Right Skeleton */}
-          <div className="hidden md:flex md:flex-col w-64 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 md:h-screen md:sticky md:top-0">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="hidden md:flex md:flex-col w-64 border-l border-border bg-background md:h-screen md:sticky md:top-0">
+            <div className="p-4 border-b border-border">
               <Skeleton className="h-8 w-32" />
             </div>
             <div className="flex-1 overflow-auto p-4">
@@ -139,228 +119,193 @@ export function SubjectContentPage({
 
   return (
     <>
-      <div className="flex flex-col md:flex-row relative">
+      <div className="flex flex-col md:flex-row relative bg-background text-foreground">
         {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 sticky top-0 z-20">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLeftSidebarOpen(true)}
-          >
+        <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background flex-shrink-0 sticky top-0 z-20">
+          <Button variant="outline" size="sm" onClick={() => setLeftSidebarOpen(true)}>
             <Menu className="h-4 w-4 mr-2" />
             {FIXED_TABS.find((t) => t.id === activeTab)?.name}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRightSidebarOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setRightSidebarOpen(true)}>
             {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name}
             <ChevronRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
 
-      {/* Left Sidebar - Content Tabs - STICKY POSITION */}
-      <aside
-        className={`
-          fixed md:sticky md:top-0 inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900
-          transform transition-transform duration-300 ease-in-out
-          ${leftSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:flex md:flex-col md:border-r md:border-gray-200 dark:md:border-gray-800
-          md:h-screen
-        `}
-      >
-        {/* Mobile close button */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 md:hidden flex-shrink-0">
-          <h3 className="font-semibold dark:text-gray-100">{subjectContent.subjectName}</h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLeftSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+        {/* Left Sidebar */}
+        <aside
+          className={`
+            fixed md:sticky md:top-0 inset-y-0 left-0 z-40 w-64 bg-sidebar
+            transform transition-transform duration-300 ease-in-out
+            ${leftSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+            md:translate-x-0 md:flex md:flex-col md:border-r md:border-sidebar-border
+            md:h-screen
+          `}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-sidebar-border md:hidden flex-shrink-0">
+            <h3 className="font-semibold text-sidebar-foreground">{subjectContent.subjectName}</h3>
+            <Button variant="ghost" size="icon" onClick={() => setLeftSidebarOpen(false)}>
+              <X className="h-5 w-5 text-sidebar-foreground" />
+            </Button>
+          </div>
 
-        {/* Desktop header - FIXED */}
-        <div className="hidden md:flex items-center p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{subjectContent.subjectName}</h3>
-        </div>
+          <div className="hidden md:flex items-center p-4 border-b border-sidebar-border flex-shrink-0">
+            <h3 className="font-semibold text-sidebar-foreground">{subjectContent.subjectName}</h3>
+          </div>
 
-        {/* Fixed Tabs - SCROLLABLE INDEPENDENTLY */}
-        <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
-          {FIXED_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setLeftSidebarOpen(false);
-              }}
-              className={`
-                w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors mb-1
-                ${
-                  activeTab === tab.id
-                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }
-              `}
-            >
-              {tab.icon}
-              <span>{tab.name}</span>
-            </button>
-          ))}
-        </div>
-      </aside>
+          <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
+            {FIXED_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setLeftSidebarOpen(false);
+                }}
+                className={`
+                  w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors mb-1
+                  ${activeTab === tab.id
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+                  }
+                `}
+              >
+                {tab.icon}
+                <span>{tab.name}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
 
-      {/* Main Content Area - NORMAL FLOW */}
-      <main className="flex-1 bg-gray-50 dark:bg-gray-900 md:mt-0">
-        <div className="p-4 md:p-6 max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-            {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name || "Content"}
-          </h2>
+        {/* Main Content Area */}
+        <main className="flex-1 bg-background md:mt-0">
+          <div className="p-4 md:p-6 max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
+              {subjectContent.subTopics.find((s) => s.id === activeSubTopic)?.name || "Content"}
+            </h2>
 
-          {/* Notes Tab */}
-          {activeTab === 'notes' && (
-            <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                {typeof currentContent === 'string' && currentContent.split("\n").map((paragraph, idx) =>
-                  paragraph.trim() ? (
-                    <p key={idx} className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ) : null
+            {/* Notes Tab */}
+            {activeTab === 'notes' && (
+              <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+                <div className="bg-card text-card-foreground rounded-lg p-4 md:p-6 shadow-sm border border-border">
+                  {typeof currentContent === 'string' && currentContent.split("\n").map((paragraph, idx) =>
+                    paragraph.trim() ? (
+                      <p key={idx} className="mb-4 leading-relaxed">
+                        {paragraph}
+                      </p>
+                    ) : null
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Video Lectures Tab */}
+            {activeTab === 'videoLectures' && (
+              <div className="space-y-4">
+                {Array.isArray(currentContent) && currentContent.length > 0 ? (
+                  currentContent.map((video: any, idx: number) => (
+                    <div key={idx} className="bg-card text-card-foreground rounded-lg p-4 shadow-sm border border-border flex gap-4">
+                      <img src={video.thumbnail} alt={video.title} className="w-40 h-24 object-cover rounded" />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-1">{video.title}</h3>
+                        <p className="text-sm text-muted-foreground">Duration: {video.duration}</p>
+                        <a href={video.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-primary hover:underline font-medium">
+                          Watch Video →
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
+                    <Video className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">No video lectures available for this topic yet.</p>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Video Lectures Tab */}
-          {activeTab === 'videoLectures' && (
-            <div className="space-y-4">
-              {Array.isArray(currentContent) && currentContent.length > 0 ? (
-                currentContent.map((video: any, idx: number) => (
-                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex gap-4">
-                    <img 
-                      src={video.thumbnail} 
-                      alt={video.title}
-                      className="w-40 h-24 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1 dark:text-gray-100">{video.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Duration: {video.duration}</p>
-                      <a 
-                        href={video.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-block text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-                      >
-                        Watch Video →
-                      </a>
+            {/* Mock Tests Tab */}
+            {activeTab === 'mockTests' && (
+              <div className="space-y-4">
+                {Array.isArray(currentContent) && currentContent.length > 0 ? (
+                  currentContent.map((test: any, idx: number) => (
+                    <div key={idx} className="bg-card text-card-foreground rounded-lg p-6 shadow-sm border border-border">
+                      <h3 className="font-semibold text-xl mb-2">{test.title}</h3>
+                      <div className="flex gap-4 text-sm text-muted-foreground mb-4">
+                        <span>⏱️ {test.duration} minutes</span>
+                        <span>📊 {test.totalMarks} marks</span>
+                        <span>❓ {test.questions?.length || 0} questions</span>
+                      </div>
+                      <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition">
+                        Start Test
+                      </button>
                     </div>
+                  ))
+                ) : (
+                  <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
+                    <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-muted-foreground">No mock tests available for this topic yet.</p>
                   </div>
-                ))
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
-                  <Video className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">No video lectures available for this topic yet.</p>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
+        </main>
 
-          {/* Mock Tests Tab */}
-          {activeTab === 'mockTests' && (
-            <div className="space-y-4">
-              {Array.isArray(currentContent) && currentContent.length > 0 ? (
-                currentContent.map((test: any, idx: number) => (
-                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h3 className="font-semibold text-xl mb-2 dark:text-gray-100">{test.title}</h3>
-                    <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                      <span>⏱️ {test.duration} minutes</span>
-                      <span>📊 {test.totalMarks} marks</span>
-                      <span>❓ {test.questions?.length || 0} questions</span>
-                    </div>
-                    <button className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition">
-                      Start Test
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
-                  <ClipboardList className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">No mock tests available for this topic yet.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </main>
+        {/* Right Sidebar */}
+        <aside
+          className={`
+            fixed md:sticky md:top-0 inset-y-0 right-0 z-40 w-64 bg-sidebar
+            transform transition-transform duration-300 ease-in-out
+            ${rightSidebarOpen ? "translate-x-0" : "translate-x-full"}
+            md:translate-x-0 md:flex md:flex-col md:border-l md:border-sidebar-border
+            md:h-screen
+          `}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-sidebar-border md:hidden flex-shrink-0">
+            <h3 className="font-semibold text-sidebar-foreground">Sub Topics</h3>
+            <Button variant="ghost" size="icon" onClick={() => setRightSidebarOpen(false)}>
+              <X className="h-5 w-5 text-sidebar-foreground" />
+            </Button>
+          </div>
 
-      {/* Right Sidebar - Sub Topics - STICKY POSITION */}
-      <aside
-        className={`
-          fixed md:sticky md:top-0 inset-y-0 right-0 z-40 w-64 bg-white dark:bg-gray-900
-          transform transition-transform duration-300 ease-in-out
-          ${rightSidebarOpen ? "translate-x-0" : "translate-x-full"}
-          md:translate-x-0 md:flex md:flex-col md:border-l md:border-gray-200 dark:md:border-gray-800
-          md:h-screen
-        `}
-      >
-        {/* Mobile close button */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800 md:hidden flex-shrink-0">
-          <h3 className="font-semibold dark:text-gray-100">Sub Topics</h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setRightSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+          <div className="hidden md:flex items-center p-4 border-b border-sidebar-border flex-shrink-0">
+            <h3 className="font-semibold text-sidebar-foreground">Sub Topics</h3>
+          </div>
 
-        {/* Desktop header - FIXED */}
-        <div className="hidden md:flex items-center p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Sub Topics</h3>
-        </div>
+          <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
+            {subjectContent.subTopics.map((subTopic) => (
+              <button
+                key={subTopic.id}
+                onClick={() => {
+                  setActiveSubTopic(subTopic.id);
+                  setRightSidebarOpen(false);
+                }}
+                className={`
+                  w-full rounded-lg px-4 py-3 text-left text-sm transition-colors mb-1
+                  ${activeSubTopic === subTopic.id
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+                  }
+                `}
+              >
+                {subTopic.name}
+              </button>
+            ))}
+          </div>
+        </aside>
 
-        {/* Sub Topics List - SCROLLABLE INDEPENDENTLY */}
-        <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
-          {subjectContent.subTopics.map((subTopic) => (
-            <button
-              key={subTopic.id}
-              onClick={() => {
-                setActiveSubTopic(subTopic.id);
-                setRightSidebarOpen(false);
-              }}
-              className={`
-                w-full rounded-lg px-4 py-3 text-left text-sm transition-colors mb-1
-                ${
-                  activeSubTopic === subTopic.id
-                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }
-              `}
-            >
-              {subTopic.name}
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      {/* Mobile Overlays */}
-      {(leftSidebarOpen || rightSidebarOpen) && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => {
-            setLeftSidebarOpen(false);
-            setRightSidebarOpen(false);
-          }}
-        />
-      )}
-    </div>
-
-    {/* Footer at the bottom - full width, outside the three-column layout */}
-    <Footer />
-  </>
+        {/* Mobile Overlays */}
+        {(leftSidebarOpen || rightSidebarOpen) && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            onClick={() => {
+              setLeftSidebarOpen(false);
+              setRightSidebarOpen(false);
+            }}
+          />
+        )}
+      </div>
+      <Footer />
+    </>
   );
 }
