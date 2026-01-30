@@ -71,7 +71,7 @@ export function SubjectSelectionPage({
                 {/* Wrap content in z-10 so it stays above the glow background */}
                 <div className="relative z-10 pointer-events-none">
                   <div
-                    className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg text-xl"
+                    className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg text-xl "
                     style={{ backgroundColor: `${subject.color}20` }}
                   >
                     {subject.icon}
