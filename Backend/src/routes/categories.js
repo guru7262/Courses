@@ -8,7 +8,6 @@ router.get('/test', (req, res) => {
 });
 
 // Get all categories with their subjects (for subject selection page)
-// This route remains unchanged - only returns basic subject info for cards
 router.get('/', async (req, res) => {
   console.log('GET /api/categories - Request received');
   
@@ -16,7 +15,7 @@ router.get('/', async (req, res) => {
     const categories = await Category.find().sort({ order: 1 }).lean();
     console.log(`Found ${categories.length} categories`);
     
-    // Simplify subjects data for listing page - UNCHANGED
+    // Simplify subjects data for listing page
     const simplifiedCategories = categories.map(cat => ({
       id: cat.id,
       name: cat.name,
@@ -27,7 +26,9 @@ router.get('/', async (req, res) => {
         description: s.description,
         icon: s.icon,
         color: s.color,
-        categoryId: cat.id
+        banner: s.banner,
+        categoryId: cat.id,
+        contentTypes: s.contentTypes // Include for admin
       }))
     }));
     
@@ -41,7 +42,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get single subject by ID with all content types and their subtopic trees
+// Get single subject by ID with all content
 router.get('/subject/:id', async (req, res) => {
   console.log(`GET /api/categories/subject/${req.params.id} - Request received`);
   
@@ -71,18 +72,126 @@ router.get('/subject/:id', async (req, res) => {
     
     console.log(`Found subject: ${foundSubject.name} in category: ${foundCategory.name}`);
     
-    // Return subject with full content types and their subtopic hierarchies
+    // Return subject with full content
     res.json({
       id: foundSubject.id,
       name: foundSubject.name,
       description: foundSubject.description,
       icon: foundSubject.icon,
       color: foundSubject.color,
-      contentTypes: foundSubject.contentTypes || [], // Array of content types with their own subtopics
+      banner: foundSubject.banner,
+      contentTypes: foundSubject.contentTypes || [],
       category: foundCategory
     });
   } catch (err) {
     console.error(`Error in GET /api/categories/subject/${req.params.id}:`, err);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: err.message 
+    });
+  }
+});
+
+// Update a subject (PUT)
+router.put('/:categoryId/subject/:subjectId', async (req, res) => {
+  console.log(`PUT /api/categories/${req.params.categoryId}/subject/${req.params.subjectId}`);
+  
+  try {
+    const category = await Category.findOne({ id: req.params.categoryId });
+    
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    
+    const subjectIndex = category.subjects.findIndex(s => s.id === req.params.subjectId);
+    
+    if (subjectIndex === -1) {
+      return res.status(404).json({ message: 'Subject not found' });
+    }
+    
+    // Update the subject
+    category.subjects[subjectIndex] = {
+      ...category.subjects[subjectIndex],
+      ...req.body,
+      id: req.params.subjectId // Ensure ID doesn't change
+    };
+    
+    await category.save();
+    
+    console.log(`✅ Subject ${req.params.subjectId} updated successfully`);
+    res.json({ 
+      message: 'Subject updated successfully',
+      subject: category.subjects[subjectIndex]
+    });
+  } catch (err) {
+    console.error('Error updating subject:', err);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: err.message 
+    });
+  }
+});
+
+// Add a new subject (POST)
+router.post('/:categoryId/subject', async (req, res) => {
+  console.log(`POST /api/categories/${req.params.categoryId}/subject`);
+  
+  try {
+    const category = await Category.findOne({ id: req.params.categoryId });
+    
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    
+    // Check if subject ID already exists
+    const existingSubject = category.subjects.find(s => s.id === req.body.id);
+    if (existingSubject) {
+      return res.status(400).json({ message: 'Subject ID already exists' });
+    }
+    
+    // Add the new subject
+    category.subjects.push(req.body);
+    await category.save();
+    
+    console.log(`✅ Subject ${req.body.id} added successfully`);
+    res.status(201).json({ 
+      message: 'Subject created successfully',
+      subject: req.body
+    });
+  } catch (err) {
+    console.error('Error creating subject:', err);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: err.message 
+    });
+  }
+});
+
+// Delete a subject (DELETE)
+router.delete('/:categoryId/subject/:subjectId', async (req, res) => {
+  console.log(`DELETE /api/categories/${req.params.categoryId}/subject/${req.params.subjectId}`);
+  
+  try {
+    const category = await Category.findOne({ id: req.params.categoryId });
+    
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    
+    const subjectIndex = category.subjects.findIndex(s => s.id === req.params.subjectId);
+    
+    if (subjectIndex === -1) {
+      return res.status(404).json({ message: 'Subject not found' });
+    }
+    
+    // Remove the subject
+    category.subjects.splice(subjectIndex, 1);
+    await category.save();
+    
+    console.log(`✅ Subject ${req.params.subjectId} deleted successfully`);
+    res.json({ message: 'Subject deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting subject:', err);
     res.status(500).json({ 
       message: 'Server error', 
       error: err.message 
