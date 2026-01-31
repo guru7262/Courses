@@ -48,6 +48,28 @@ const NotificationSchema = new mongoose.Schema({
     type: String,
     enum: ['all', '12th', '11th', '10th', '9th'],
     default: 'all'
+  },
+  // NEW FIELDS FOR DETAILED VIEW
+  bannerImage: {
+    type: String,
+    default: null
+  },
+  fullContent: {
+    type: String,
+    default: null
+  },
+  metadata: {
+    author: {
+      type: String,
+      default: null
+    },
+    category: {
+      type: String,
+      default: null
+    },
+    tags: [{
+      type: String
+    }]
   }
 }, {
   timestamps: true

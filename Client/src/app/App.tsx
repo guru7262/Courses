@@ -10,6 +10,7 @@ import { SubjectSelectionPage } from "@/app/components/SubjectSelectionPage";
 import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { NotificationBanner } from "@/app/components/notifications/NotificationBanner";
+import { NotificationsPage } from "@/app/components/notifications/NotificationsPage";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
 
@@ -215,6 +216,17 @@ export default function App() {
             <Route 
               path="/subject/:subjectId" 
               element={<SubjectDetailPage />} 
+            />
+            <Route 
+              path="/notifications" 
+              element={
+                <>
+                  <Navbar showMenuButton={false} />
+                  <div className="flex-1 overflow-y-auto">
+                    <NotificationsPage apiUrl={API_BASE_URL} />
+                  </div>
+                </>
+              } 
             />
           </Routes>
         </div>
