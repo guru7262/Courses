@@ -214,15 +214,7 @@ export function SubjectContentPage({
   const renderSubTopics = (topics: SubTopic[] = [], level: number = 0) => {
     return topics.map((subTopic) => (
       <div key={subTopic.id}>
-        <button
-          onClick={() => {
-            setActiveSubTopic(subTopic.id);
-            setRightSidebarOpen(false);
-            // Only toggle expansion if there are actual sub-subtopics
-            if (subTopic.subTopics && subTopic.subTopics.length > 0) {
-              toggleSubTopicExpansion(subTopic.id);
-            }
-          }}
+        <div
           className={`
             w-full rounded-lg px-4 py-3 text-left text-sm transition-colors mb-1 flex items-center justify-between
             ${activeSubTopic === subTopic.id
@@ -232,15 +224,36 @@ export function SubjectContentPage({
           `}
           style={{ paddingLeft: `${16 + level * 16}px` }}
         >
-          <span>{subTopic.name}</span>
+          <span 
+            className="flex-1 cursor-pointer"
+            onClick={() => {
+              setActiveSubTopic(subTopic.id);
+              setRightSidebarOpen(false);
+              // Also expand if it has subtopics
+              if (subTopic.subTopics && subTopic.subTopics.length > 0) {
+                toggleSubTopicExpansion(subTopic.id);
+              }
+            }}
+          >
+            {subTopic.name}
+          </span>
           {subTopic.subTopics && subTopic.subTopics.length > 0 && (
-            <ChevronRight
-              className={`h-4 w-4 transition-transform flex-shrink-0 ${
-                expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
-              }`}
-            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleSubTopicExpansion(subTopic.id);
+              }}
+              className="flex-shrink-0 p-1 hover:bg-sidebar-accent/30 rounded transition-colors"
+              aria-label={expandedSubTopics.includes(subTopic.id) ? "Collapse" : "Expand"}
+            >
+              <ChevronRight
+                className={`h-4 w-4 transition-transform ${
+                  expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
+                }`}
+              />
+            </button>
           )}
-        </button>
+        </div>
         {subTopic.subTopics && 
          subTopic.subTopics.length > 0 && 
          expandedSubTopics.includes(subTopic.id) && (

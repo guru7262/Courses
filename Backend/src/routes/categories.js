@@ -132,31 +132,54 @@ router.put('/:categoryId/subject/:subjectId', async (req, res) => {
   }
 });
 
-// Add a new subject (POST)
+// Add a new subject (POST) - with auto-create category
 router.post('/:categoryId/subject', async (req, res) => {
   console.log(`POST /api/categories/${req.params.categoryId}/subject`);
   
   try {
-    const category = await Category.findOne({ id: req.params.categoryId });
+    let category = await Category.findOne({ id: req.params.categoryId });
+    let categoryWasCreated = false;
     
+    // If category doesn't exist, create it
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      console.log(`Category ${req.params.categoryId} not found, creating new category...`);
+      
+      // Get the highest order number from existing categories
+      const categories = await Category.find().sort({ order: -1 }).limit(1);
+      const nextOrder = categories.length > 0 ? categories[0].order + 1 : 1;
+      
+      // Create new category with formatted name
+      const categoryName = req.params.categoryId
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      
+      category = new Category({
+        id: req.params.categoryId,
+        name: categoryName,
+        order: nextOrder,
+        subjects: []
+      });
+      
+      categoryWasCreated = true;
+      console.log(`✅ Created new category: ${categoryName}`);
     }
     
-    // Check if subject ID already exists
+    // Check if subject ID already exists in this category
     const existingSubject = category.subjects.find(s => s.id === req.body.id);
     if (existingSubject) {
-      return res.status(400).json({ message: 'Subject ID already exists' });
+      return res.status(400).json({ message: 'Subject ID already exists in this category' });
     }
     
     // Add the new subject
     category.subjects.push(req.body);
     await category.save();
     
-    console.log(`✅ Subject ${req.body.id} added successfully`);
+    console.log(`✅ Subject ${req.body.id} added successfully to category ${req.params.categoryId}`);
     res.status(201).json({ 
       message: 'Subject created successfully',
-      subject: req.body
+      subject: req.body,
+      categoryCreated: categoryWasCreated
     });
   } catch (err) {
     console.error('Error creating subject:', err);

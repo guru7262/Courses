@@ -50,7 +50,8 @@ const ContentTypeSchema = new mongoose.Schema({
   },
   icon: {
     type: String,
-    default: null
+    required: false,  // Changed to optional
+    default: ''       // Default empty string
   },
   type: {
     type: String,
@@ -80,11 +81,16 @@ const SubjectSchema = new mongoose.Schema({
   },
   icon: {
     type: String,
-    required: true
+    required: false,  // Changed to optional
+    default: ''       // Default empty string
   },
   color: {
     type: String,
     required: true
+  },
+  banner: {
+    type: String,
+    required: false   // Optional banner field
   },
   // Dynamic content types - can add Notes, Videos, Mock Tests, or custom types
   contentTypes: [ContentTypeSchema]
