@@ -1,30 +1,19 @@
 const mongoose = require('mongoose');
 
-// Schema for individual content items
-const ContentItemSchema = new mongoose.Schema({
-  notes: {
+// Schema for content (flexible for different types)
+const ContentSchema = new mongoose.Schema({
+  type: {
     type: String,
-    default: ''
+    required: true,
+    enum: ['notes', 'videos', 'links', 'mockTests', 'mcqs', 'custom']
   },
-  videoLectures: [{
-    title: String,
-    url: String,
-    duration: String,
-    thumbnail: String
-  }],
-  mockTests: [{
-    title: String,
-    questions: [{
-      question: String,
-      options: [String],
-      correctAnswer: Number,
-      explanation: String
-    }],
-    duration: Number,
-    totalMarks: Number
-  }]
+  data: {
+    type: mongoose.Schema.Types.Mixed, // Flexible data structure
+    required: true
+  }
 });
 
+// Schema for subtopics (supports nesting)
 const SubTopicSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -34,7 +23,34 @@ const SubTopicSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  content: ContentItemSchema
+  subTopics: [{
+    type: mongoose.Schema.Types.Mixed // Self-referencing for nesting
+  }],
+  content: ContentSchema
+});
+
+// Schema for content types (dynamic tabs)
+const ContentTypeSchema = new mongoose.Schema({
+  id: {
+    type: String,
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  icon: {
+    type: String,
+    default: null
+  },
+  type: {
+    type: String,
+    required: true
+  },
+  order: {
+    type: Number,
+    default: 0
+  }
 });
 
 const SubjectSchema = new mongoose.Schema({
@@ -58,6 +74,7 @@ const SubjectSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  contentTypes: [ContentTypeSchema], // Dynamic content types
   subTopics: [SubTopicSchema]
 });
 
