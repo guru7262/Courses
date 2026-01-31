@@ -7,7 +7,8 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Categories route is working!' });
 });
 
-// Get all categories with their subjects
+// Get all categories with their subjects (for subject selection page)
+// This route remains unchanged - only returns basic subject info for cards
 router.get('/', async (req, res) => {
   console.log('GET /api/categories - Request received');
   
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
     const categories = await Category.find().sort({ order: 1 }).lean();
     console.log(`Found ${categories.length} categories`);
     
-    // Simplify subjects data for listing page
+    // Simplify subjects data for listing page - UNCHANGED
     const simplifiedCategories = categories.map(cat => ({
       id: cat.id,
       name: cat.name,
@@ -40,7 +41,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get single subject by ID across all categories
+// Get single subject by ID with all content types and their subtopic trees
 router.get('/subject/:id', async (req, res) => {
   console.log(`GET /api/categories/subject/${req.params.id} - Request received`);
   
@@ -70,9 +71,14 @@ router.get('/subject/:id', async (req, res) => {
     
     console.log(`Found subject: ${foundSubject.name} in category: ${foundCategory.name}`);
     
-    // Return subject with category info
+    // Return subject with full content types and their subtopic hierarchies
     res.json({
-      ...foundSubject,
+      id: foundSubject.id,
+      name: foundSubject.name,
+      description: foundSubject.description,
+      icon: foundSubject.icon,
+      color: foundSubject.color,
+      contentTypes: foundSubject.contentTypes || [], // Array of content types with their own subtopics
       category: foundCategory
     });
   } catch (err) {

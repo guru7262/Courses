@@ -133,15 +133,8 @@ function SubjectDetailPage() {
       const data = await response.json();
       console.log("✅ Content loaded:", data);
       
-      const transformedContent = {
-        subjectId: data.id,
-        subjectName: data.name,
-        subTopics: data.subTopics || [],
-        category: data.category
-      };
-      
-      console.log("Transformed:", transformedContent);
-      setSubjectContent(transformedContent);
+      // Data is now in the correct format - no transformation needed
+      setSubjectContent(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       console.error("❌ Error fetching content:", err);

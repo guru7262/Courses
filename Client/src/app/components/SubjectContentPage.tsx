@@ -8,11 +8,11 @@ import { Footer } from "@/app/components/Footer";
 interface SubTopic {
   id: string;
   name: string;
-  subTopics?: SubTopic[];
   content?: {
     type: 'notes' | 'videos' | 'links' | 'mockTests' | 'mcqs' | string;
     data: any;
   };
+  subTopics?: SubTopic[];
 }
 
 interface ContentType {
@@ -20,13 +20,21 @@ interface ContentType {
   name: string;
   icon?: string;
   type: 'notes' | 'videos' | 'links' | 'mockTests' | 'mcqs' | string;
+  order: number;
+  subTopics: SubTopic[]; // Each content type has its own subtopic tree
 }
 
 interface SubjectContent {
-  subjectId: string;
-  subjectName: string;
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
   contentTypes: ContentType[];
-  subTopics: SubTopic[];
+  category: {
+    id: string;
+    name: string;
+  };
 }
 
 interface SubjectContentPageProps {
@@ -51,17 +59,18 @@ export function SubjectContentPage({
 }: SubjectContentPageProps) {
   const [searchParams] = useSearchParams();
 
-  // FIX: Using optional chaining (?.) and nullish coalescing to prevent "reading properties of undefined"
   const [activeContentType, setActiveContentType] = useState(
     subjectContent?.contentTypes?.[0]?.id || ""
   );
-  const [activeSubTopic, setActiveSubTopic] = useState(
-    subjectContent?.subTopics?.[0]?.id || ""
-  );
+  const [activeSubTopic, setActiveSubTopic] = useState("");
   
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [expandedSubTopics, setExpandedSubTopics] = useState<string[]>([]);
+
+  // Get current content type's subtopics
+  const currentContentType = subjectContent?.contentTypes?.find(ct => ct.id === activeContentType);
+  const currentSubTopics = currentContentType?.subTopics || [];
 
   // Sync state if subjectContent loads after initial render
   useEffect(() => {
@@ -72,11 +81,113 @@ export function SubjectContentPage({
     }
   }, [subjectContent, searchParams, activeContentType]);
 
+  // Set first subtopic when content type changes
   useEffect(() => {
-    if (subjectContent?.subTopics?.length > 0 && !activeSubTopic) {
-      setActiveSubTopic(subjectContent.subTopics[0].id);
+    if (currentSubTopics.length > 0) {
+      // Try to find matching topic in new content type based on current selection
+      const currentTopic = activeSubTopic ? findSubTopic(currentSubTopics, activeSubTopic) : null;
+      
+      if (currentTopic) {
+        // Already in the right topic, do nothing
+        return;
+      }
+      
+      // Try to match by hierarchy: look for same name in current path
+      const matchedTopic = findMatchingTopicByName(currentSubTopics, activeSubTopic);
+      
+      if (matchedTopic) {
+        setActiveSubTopic(matchedTopic.id);
+      } else {
+        // No match found, find first topic with content
+        const firstTopicWithContent = findFirstTopicWithContent(currentSubTopics);
+        if (firstTopicWithContent) {
+          setActiveSubTopic(firstTopicWithContent.id);
+        } else {
+          setActiveSubTopic(currentSubTopics[0].id);
+        }
+      }
+    } else {
+      setActiveSubTopic("");
     }
-  }, [subjectContent, activeSubTopic]);
+  }, [activeContentType, currentSubTopics]);
+
+  // Helper to find first topic with content
+  const findFirstTopicWithContent = (topics: SubTopic[]): SubTopic | null => {
+    for (const topic of topics) {
+      if (topic.content) return topic;
+      if (topic.subTopics) {
+        const found = findFirstTopicWithContent(topic.subTopics);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Helper to find matching topic by hierarchy path
+  const findMatchingTopicByName = (topics: SubTopic[], currentTopicId: string): SubTopic | null => {
+    // First, try to find the exact same topic by name in the previous content type
+    const previousContentType = subjectContent?.contentTypes?.find(ct => 
+      ct.subTopics.some(st => findSubTopic([st], currentTopicId))
+    );
+    
+    if (!previousContentType) return null;
+    
+    const previousTopic = findSubTopic(previousContentType.subTopics, currentTopicId);
+    if (!previousTopic) return null;
+    
+    // Build path of names from root to current topic
+    const path = buildTopicPath(previousContentType.subTopics, currentTopicId);
+    if (path.length === 0) return null;
+    
+    // Try to match the deepest level first, then work up
+    for (let i = path.length - 1; i >= 0; i--) {
+      const matchedTopic = findTopicByNamePath(topics, path.slice(0, i + 1));
+      if (matchedTopic) {
+        // If matched topic has content, use it
+        if (matchedTopic.content) {
+          return matchedTopic;
+        }
+        // Otherwise, try to find first child with content
+        if (matchedTopic.subTopics) {
+          const firstChild = findFirstTopicWithContent(matchedTopic.subTopics);
+          if (firstChild) return firstChild;
+        }
+        // If no content in children, return the matched topic anyway
+        return matchedTopic;
+      }
+    }
+    
+    return null;
+  };
+  
+  // Build path of topic names from root to target
+  const buildTopicPath = (topics: SubTopic[], targetId: string, currentPath: string[] = []): string[] => {
+    for (const topic of topics) {
+      const newPath = [...currentPath, topic.name];
+      if (topic.id === targetId) {
+        return newPath;
+      }
+      if (topic.subTopics) {
+        const found = buildTopicPath(topic.subTopics, targetId, newPath);
+        if (found.length > 0) return found;
+      }
+    }
+    return [];
+  };
+  
+  // Find topic by matching path of names
+  const findTopicByNamePath = (topics: SubTopic[], namePath: string[]): SubTopic | null => {
+    if (namePath.length === 0) return null;
+    
+    const [firstName, ...restPath] = namePath;
+    const topic = topics.find(t => t.name === firstName);
+    
+    if (!topic) return null;
+    if (restPath.length === 0) return topic;
+    if (!topic.subTopics) return null;
+    
+    return findTopicByNamePath(topic.subTopics, restPath);
+  };
 
   const findSubTopic = (topics: SubTopic[] = [], id: string): SubTopic | null => {
     for (const topic of topics) {
@@ -89,8 +200,8 @@ export function SubjectContentPage({
     return null;
   };
 
-  const activeSubTopicData = findSubTopic(subjectContent?.subTopics, activeSubTopic);
-  const activeContentTypeData = subjectContent?.contentTypes?.find(ct => ct.id === activeContentType);
+  const activeSubTopicData = findSubTopic(currentSubTopics, activeSubTopic);
+  const activeContentTypeData = currentContentType;
 
   const toggleSubTopicExpansion = (topicId: string) => {
     setExpandedSubTopics(prev =>
@@ -107,6 +218,7 @@ export function SubjectContentPage({
           onClick={() => {
             setActiveSubTopic(subTopic.id);
             setRightSidebarOpen(false);
+            // Only toggle expansion if there are actual sub-subtopics
             if (subTopic.subTopics && subTopic.subTopics.length > 0) {
               toggleSubTopicExpansion(subTopic.id);
             }
@@ -123,7 +235,7 @@ export function SubjectContentPage({
           <span>{subTopic.name}</span>
           {subTopic.subTopics && subTopic.subTopics.length > 0 && (
             <ChevronRight
-              className={`h-4 w-4 transition-transform ${
+              className={`h-4 w-4 transition-transform flex-shrink-0 ${
                 expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
               }`}
             />
@@ -197,16 +309,19 @@ export function SubjectContentPage({
           <div className="space-y-3">
             {Array.isArray(data) && data.length > 0 ? (
               data.map((link: any, idx: number) => (
-                <div key={idx} className="bg-card text-card-foreground rounded-lg p-4 shadow-sm border border-border">
-                  <h3 className="font-semibold text-lg mb-1">{link.title}</h3>
-                  {link.description && (
-                    <p className="text-sm text-muted-foreground mb-2">{link.description}</p>
-                  )}
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium flex items-center gap-1">
-                    <LinkIcon className="h-4 w-4" />
-                    Visit Link
-                  </a>
-                </div>
+                <a
+                  key={idx}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-card text-card-foreground rounded-lg p-4 shadow-sm border border-border hover:shadow-md transition-shadow"
+                >
+                  <h4 className="font-medium text-foreground mb-1">{link.title}</h4>
+                  <p className="text-sm text-muted-foreground mb-2">{link.description}</p>
+                  <span className="text-xs text-primary hover:underline">
+                    {link.url} →
+                  </span>
+                </a>
               ))
             ) : (
               <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
@@ -341,13 +456,13 @@ export function SubjectContentPage({
           `}
         >
           <div className="flex items-center justify-between p-4 border-b border-sidebar-border md:hidden flex-shrink-0">
-            <h3 className="font-semibold text-sidebar-foreground">{subjectContent.subjectName}</h3>
+            <h3 className="font-semibold text-sidebar-foreground">{subjectContent.name}</h3>
             <Button variant="ghost" size="icon" onClick={() => setLeftSidebarOpen(false)}>
               <X className="h-5 w-5 text-sidebar-foreground" />
             </Button>
           </div>
           <div className="hidden md:flex items-center p-4 border-b border-sidebar-border flex-shrink-0">
-            <h3 className="font-semibold text-sidebar-foreground">{subjectContent.subjectName}</h3>
+            <h3 className="font-semibold text-sidebar-foreground">{subjectContent.name}</h3>
           </div>
           <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
             {subjectContent.contentTypes?.map((contentType) => (
@@ -404,7 +519,13 @@ export function SubjectContentPage({
             <h3 className="font-semibold text-sidebar-foreground">Topics</h3>
           </div>
           <div className="flex-1 overflow-y-auto p-2 sidebar-scroll">
-            {renderSubTopics(subjectContent.subTopics)}
+            {currentSubTopics.length > 0 ? (
+              renderSubTopics(currentSubTopics)
+            ) : (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No topics available
+              </div>
+            )}
           </div>
         </aside>
 
