@@ -43,7 +43,7 @@ export function SubjectSelectionPage({
 
   if (loading) {
     return (
-      <div className="bg-background p-4 md:p-8 overflow-y-auto">
+      <div className="bg-background p-4 md:p-8 min-h-full">
         <div className="mx-auto max-w-6xl">
           <Skeleton className="h-10 w-48 mb-4" />
           <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-12">
@@ -57,13 +57,12 @@ export function SubjectSelectionPage({
   }
 
   return (
-    <>
-      <div className="bg-background p-4 md:p-8">
+    <div className="flex flex-col min-h-full">
+      {/* Main content area expands to fill space */}
+      <div className="bg-background p-4 md:p-8 flex-1">
         <div className="mx-auto max-w-6xl">
-          {/* Categories with their subjects */}
           {categories.map((category) => (
             <div key={category.id} className="mb-12">
-              {/* Category Header */}
               <div className="mb-6">
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                   {category.name}
@@ -71,8 +70,7 @@ export function SubjectSelectionPage({
                 <div className="h-1 w-20 bg-primary rounded-full"></div>
               </div>
 
-              {/* Subject Cards Grid */}
-              <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 content-scroll">
+              <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {category.subjects.map((subject) => (
                   <button
                     key={subject.id}
@@ -112,7 +110,8 @@ export function SubjectSelectionPage({
           ))}
         </div>
       </div>
+      {/* Footer stays at the bottom */}
       <Footer />
-    </>
+    </div>
   );
 }
