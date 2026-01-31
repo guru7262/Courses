@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bell, ExternalLink } from "lucide-react";
+import { ArrowLeft, Bell, ExternalLink, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
 
@@ -14,7 +14,6 @@ interface Notification {
   link?: string;
   linkText?: string;
   createdAt: string;
-  // Extended fields for detailed view
   bannerImage?: string;
   fullContent?: string;
   metadata?: {
@@ -35,6 +34,7 @@ export function NotificationsPage({ apiUrl }: NotificationsPageProps) {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -96,225 +96,143 @@ export function NotificationsPage({ apiUrl }: NotificationsPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6">
-          <Skeleton className="h-10 w-48 mb-6" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <Skeleton className="h-96 w-full" />
-            </div>
-            <div className="lg:col-span-2">
-              <Skeleton className="h-96 w-full" />
-            </div>
-          </div>
+      <div className="min-h-screen bg-background w-full">
+        <div className="p-4 border-b"><Skeleton className="h-8 w-32" /></div>
+        <div className="flex h-[calc(100vh-60px)]">
+          <Skeleton className="w-16 lg:w-1/3 h-full rounded-none" />
+          <Skeleton className="flex-1 h-full rounded-none" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-            className="rounded-full"
+    <div className="min-h-screen bg-background w-full overflow-hidden">
+      <div className="flex items-center gap-3 p-4 border-b border-border bg-card relative z-30">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-full h-8 w-8">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-xl font-bold">Notifications</h1>
+      </div>
+
+      <div className="flex h-[calc(100vh-65px)] w-full overflow-hidden bg-card">
+        
+        {/* LEFT PANEL */}
+        <div 
+          className={`
+            relative flex flex-col border-r border-border bg-muted/10 transition-all duration-300 ease-in-out z-20
+            ${isSidebarExpanded ? 'w-[60vw] lg:w-1/3' : 'w-16 lg:w-1/3'}
+          `}
+        >
+          <button 
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="lg:hidden absolute -right-3 top-1/2 -translate-y-1/2 z-30 bg-primary text-primary-foreground rounded-full p-1 shadow-lg"
           >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Notifications</h1>
-            <p className="text-sm text-muted-foreground">
-              {notifications.length} {notifications.length === 1 ? 'notification' : 'notifications'}
-            </p>
-          </div>
-        </div>
+            {isSidebarExpanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+          </button>
 
-        {notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Bell className="h-16 w-16 text-muted-foreground mb-4 opacity-50" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">No notifications yet</h2>
-            <p className="text-muted-foreground">Check back later for updates and announcements</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Sidebar - Notification List */}
-            <div className="lg:col-span-1">
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                <div className="p-4 border-b border-border bg-muted/50">
-                  <h2 className="font-semibold text-foreground">All Notifications</h2>
-                </div>
-                <div className="divide-y divide-border max-h-[calc(100vh-200px)] overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <button
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`w-full text-left p-4 transition-colors hover:bg-accent/50 ${
-                        selectedNotification?.id === notification.id ? 'bg-accent' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {notification.bannerImage ? (
-                          <img
-                            src={notification.bannerImage}
-                            alt={notification.title}
-                            className="w-16 h-16 rounded object-cover flex-shrink-0"
-                          />
-                        ) : notification.icon ? (
-                          <div className="w-16 h-16 rounded bg-muted flex items-center justify-center text-2xl flex-shrink-0">
-                            {notification.icon}
-                          </div>
-                        ) : (
-                          <div className="w-16 h-16 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                            <Bell className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <h3 className={`font-medium text-sm mb-1 line-clamp-2 ${getTypeColor(notification.type)}`}>
-                            {notification.title}
-                          </h3>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(notification.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Content - Detailed View */}
-            <div className="lg:col-span-2">
-              {selectedNotification && (
-                <div className="bg-card border border-border rounded-lg overflow-hidden">
-                  {/* Banner Image */}
-                  {selectedNotification.bannerImage && (
-                    <div className="w-full h-48 md:h-64 overflow-hidden bg-muted">
-                      <img
-                        src={selectedNotification.bannerImage}
-                        alt={selectedNotification.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-
-                  {/* Content */}
-                  <div className="p-6">
-                    {/* Type Badge */}
-                    <div className="mb-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeBadge(selectedNotification.type)}`}>
-                        {selectedNotification.type.charAt(0).toUpperCase() + selectedNotification.type.slice(1)}
-                      </span>
-                    </div>
-
-                    {/* Title */}
-                    <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                      {selectedNotification.icon && (
-                        <span className="mr-2">{selectedNotification.icon}</span>
-                      )}
-                      {selectedNotification.title}
-                    </h2>
-
-                    {/* Metadata */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6 pb-6 border-b border-border">
-                      <span>
-                        {new Date(selectedNotification.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </span>
-                      {selectedNotification.metadata?.author && (
-                        <span>By {selectedNotification.metadata.author}</span>
-                      )}
-                      {selectedNotification.metadata?.category && (
-                        <span className="px-2 py-1 bg-muted rounded text-xs">
-                          {selectedNotification.metadata.category}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Short Description */}
-                    <div className="mb-6">
-                      <p className="text-muted-foreground leading-relaxed">
-                        {selectedNotification.message}
-                      </p>
-                    </div>
-
-                    {/* Read More Section */}
-                    {selectedNotification.fullContent && (
-                      <div className="mb-6">
-                        {!showFullContent ? (
-                          <Button
-                            onClick={() => setShowFullContent(true)}
-                            variant="outline"
-                            className="w-full md:w-auto"
-                          >
-                            Read More
-                          </Button>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
-                              <div className="text-foreground leading-relaxed whitespace-pre-wrap">
-                                {selectedNotification.fullContent}
-                              </div>
-                            </div>
-                            <Button
-                              onClick={() => setShowFullContent(false)}
-                              variant="ghost"
-                              size="sm"
-                            >
-                              Show Less
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Action Link */}
-                    {selectedNotification.link && (
-                      <div className="pt-6 border-t border-border">
-                        <a
-                          href={selectedNotification.link}
-                          className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
-                          target={selectedNotification.link.startsWith('http') ? '_blank' : '_self'}
-                          rel={selectedNotification.link.startsWith('http') ? 'noopener noreferrer' : ''}
-                        >
-                          {selectedNotification.linkText || 'Learn More'}
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    {selectedNotification.metadata?.tags && selectedNotification.metadata.tags.length > 0 && (
-                      <div className="pt-6 border-t border-border mt-6">
-                        <div className="flex flex-wrap gap-2">
-                          {selectedNotification.metadata.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-xs"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
+          <div className="flex-1 overflow-y-auto divide-y divide-border flex flex-col">
+            {notifications.map((notification) => (
+              <button
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`w-full text-left transition-colors hover:bg-accent/50 group ${
+  selectedNotification?.id === notification.id 
+    ? 'bg-accent border-r-4 border-primary border-b-transparent' // Added border-b-transparent
+    : 'border-b border-border' // Moved border-b here
+} ${isSidebarExpanded ? 'p-0 h-28' : 'p-4 flex items-center justify-center min-h-[60px]'}`}
+              >
+                {/* DESKTOP & MOBILE EXPANDED VIEW */}
+                <div className={`w-full h-full ${isSidebarExpanded ? 'flex flex-row' : 'hidden lg:flex lg:flex-row lg:items-start lg:gap-4'}`}>
+                  {/* Left Side: Image/Icon */}
+                  <div className={`${isSidebarExpanded ? 'w-1/2' : 'w-20'} h-full bg-muted overflow-hidden shrink-0`}>
+                    {notification.bannerImage ? (
+                      <img src={notification.bannerImage} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-accent/20">
+                         <span className="text-2xl">{notification.icon || "🔔"}</span>
                       </div>
                     )}
                   </div>
+                  {/* Right Side: Info */}
+                  <div className={`flex-1 p-3 flex flex-col justify-start overflow-hidden pt-2`}>
+                    <h3 className={`font-bold text-sm lg:text-base mb-1 line-clamp-1 ${getTypeColor(notification.type)}`}>
+                      {notification.title}
+                    </h3>
+                    <p className="text-[10px] lg:text-sm text-muted-foreground line-clamp-2 leading-tight">
+                      {notification.message}
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* MOBILE COLLAPSED VIEW: Horizontal single word */}
+                {!isSidebarExpanded && (
+                  <div className="lg:hidden w-full flex justify-center items-center overflow-hidden">
+                    <span className="text-[11px] font-bold text-muted-foreground/80 truncate">
+                      {notification.title.split(' ')[0]}..
+                    </span>
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* RIGHT PANEL - Detailed Content */}
+        <div className="flex-1 overflow-y-auto bg-background">
+          {selectedNotification ? (
+            <div className="animate-in fade-in duration-300">
+              {selectedNotification.bannerImage && (
+                <img
+                  src={selectedNotification.bannerImage}
+                  alt=""
+                  className="w-full h-48 md:h-80 object-cover border-b"
+                />
+              )}
+              
+              <div className="p-6 md:p-12 max-w-4xl mx-auto">
+                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase mb-4 ${getTypeBadge(selectedNotification.type)}`}>
+                  {selectedNotification.type}
+                </span>
+                
+                <h2 className="text-2xl md:text-5xl font-black mb-4 tracking-tight leading-tight flex items-center gap-3">
+                  <span className="shrink-0">{selectedNotification.icon || "🔔"}</span>
+                  {selectedNotification.title}
+                </h2>
+                
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-10 border-b pb-6">
+                   <span>{new Date(selectedNotification.createdAt).toLocaleDateString(undefined, { dateStyle: 'full' })}</span>
+                </div>
+
+                <div className="text-base md:text-lg text-foreground/90 leading-relaxed whitespace-pre-wrap mb-8">
+                  {showFullContent && selectedNotification.fullContent 
+                    ? selectedNotification.fullContent 
+                    : selectedNotification.message}
+                </div>
+
+                {selectedNotification.fullContent && (
+                  <Button variant="secondary" onClick={() => setShowFullContent(!showFullContent)} className="rounded-full px-6">
+                    {showFullContent ? "Show Less" : "Read Full Update"}
+                  </Button>
+                )}
+
+                {selectedNotification.link && (
+                  <div className="mt-12 pt-8 border-t">
+                    <a href={selectedNotification.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-primary hover:underline font-bold text-lg">
+                      {selectedNotification.linkText || 'Learn More'}
+                      <ExternalLink size={20} />
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center opacity-20">
+                <Bell size={64} />
+                <p className="mt-4 font-medium">Select a notification</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
