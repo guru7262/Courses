@@ -316,9 +316,8 @@ export function ManageNotificationsPage() {
                         <h3>{notification.title || 'Untitled'}</h3>
                         <div className="notification-badges">
                           <span className={`badge badge-${notification.type}`}>{notification.type}</span>
-                          <span className={`badge badge-priority-${notification.priority}`}>{notification.priority}</span>
-                          <span className={`badge badge-audience`}>{notification.targetAudience}</span>
-                        </div>
+                          <span className={`badge badge-audience ${notification.isActive ? 'badge-active' : 'badge-inactive'}`}>{notification.isActive ? 'Active' : 'Inactive'}</span>
+                        </div> 
                       </div>
                       <p className="notification-message">{notification.message}</p>
                       {notification.expiresAt && (

@@ -630,9 +630,10 @@ body {
 
 /* Unsaved Changes Badge */
 .unsaved-badge {
+  text-align: center;
   background: #ef4444;
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 500;
@@ -798,9 +799,13 @@ body {
   color: #991b1b;
 }
 
-.badge-audience {
-  background: #dbeafe;
-  color: #1e40af;
+.badge-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-inactive {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .notification-message {
