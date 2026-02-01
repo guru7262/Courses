@@ -531,29 +531,7 @@ export function EditContentPage() {
 
           {currentSubTopic ? (
             <div className="content-form">
-              <div className="form-group">
-                <label className="form-label">Topic Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={currentSubTopic.name}
-                  disabled
-                  style={{ background: '#f0f0f0' }}
-                />
-                <small style={{ color: '#666' }}>Use the rename button in the sidebar to change</small>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Content Type</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={currentContentType?.type || ''}
-                  disabled
-                  style={{ background: '#f0f0f0' }}
-                />
-              </div>
-
+              
               <div className="form-group">
                 <label className="form-label">Content Data</label>
                 <textarea
@@ -578,16 +556,8 @@ export function EditContentPage() {
                     }
                   }}
                   placeholder="Enter content here (text or JSON)"
-                  style={{ minHeight: '300px', fontFamily: 'monospace' }}
+                  style={{ minHeight: '100vh', fontFamily: 'monospace' }}
                 />
-                <small style={{ color: '#666' }}>
-                  For notes: Enter plain text<br />
-                  For videos/links/mcqs: Enter JSON array
-                </small>
-              </div>
-
-              <div style={{ padding: '1rem', background: '#f0f0f0', borderRadius: '8px' }}>
-                <strong>Has Children:</strong> {currentSubTopic.subTopics?.length || 0} subtopics
               </div>
             </div>
           ) : (
