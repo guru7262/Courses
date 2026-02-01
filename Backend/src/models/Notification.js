@@ -49,6 +49,10 @@ const NotificationSchema = new mongoose.Schema({
     enum: ['all', '12th', '11th', '10th', '9th'],
     default: 'all'
   },
+  order: {
+    type: Number,
+    default: 0
+  },
   // NEW FIELDS FOR DETAILED VIEW
   bannerImage: {
     type: String,
