@@ -209,10 +209,23 @@ router.delete('/:categoryId/subject/:subjectId', async (req, res) => {
     
     // Remove the subject
     category.subjects.splice(subjectIndex, 1);
-    await category.save();
     
-    console.log(`✅ Subject ${req.params.subjectId} deleted successfully`);
-    res.json({ message: 'Subject deleted successfully' });
+    // If category has no more subjects, delete the category
+    if (category.subjects.length === 0) {
+      await Category.deleteOne({ id: req.params.categoryId });
+      console.log(`✅ Subject ${req.params.subjectId} deleted and category ${req.params.categoryId} auto-deleted (no subjects left)`);
+      res.json({ 
+        message: 'Subject deleted successfully',
+        categoryDeleted: true
+      });
+    } else {
+      await category.save();
+      console.log(`✅ Subject ${req.params.subjectId} deleted successfully`);
+      res.json({ 
+        message: 'Subject deleted successfully',
+        categoryDeleted: false
+      });
+    }
   } catch (err) {
     console.error('Error deleting subject:', err);
     res.status(500).json({ 

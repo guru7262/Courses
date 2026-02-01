@@ -55,7 +55,8 @@ const ContentTypeSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    required: true
+    required: false,  // Changed to optional
+    default: ''       // Default empty string
   },
   order: {
     type: Number,

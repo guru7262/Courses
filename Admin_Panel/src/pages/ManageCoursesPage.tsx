@@ -33,6 +33,27 @@ export function ManageCoursesPage() {
     navigate(`/edit-course/${categoryId}/${subjectId}`);
   };
 
+  const handleDeleteCourse = async (categoryId: string, subjectId: string, subjectName: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${subjectName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/subject/${subjectId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete');
+
+      alert('Course deleted successfully!');
+      // Refresh categories
+      fetchCategories();
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Failed to delete course');
+    }
+  };
+
   const handleAddCourse = () => {
     navigate('/add-course');
   };
@@ -97,6 +118,12 @@ export function ManageCoursesPage() {
                         onClick={() => handleEditCourse(category.id, subject.id)}
                       >
                         Edit Course
+                      </button>
+                      <button 
+                        className="btn btn-danger btn-small"
+                        onClick={() => handleDeleteCourse(category.id, subject.id, subject.name)}
+                      >
+                        Delete
                       </button>
                     </div>
                   </div>

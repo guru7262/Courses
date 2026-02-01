@@ -19,6 +19,11 @@ export function EditContentPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingContentType, setEditingContentType] = useState<string | null>(null);
+  const [activeSubTopicActions, setActiveSubTopicActions] = useState<string>('');
+  
+  // Mobile sidebar states
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (subjectId) {
@@ -80,14 +85,11 @@ export function EditContentPage() {
     const name = prompt('Content Type Name (e.g., Notes, Videos):');
     if (!name) return;
 
-    const type = prompt('Type (notes/videos/links/mockTests/mcqs/custom):', 'notes');
-    if (!type) return;
-
     const newContentType: ContentType = {
-      id: `${type}-${Date.now()}`,
+      id: `content-${Date.now()}`,
       name,
       icon: '',
-      type,
+      type: '',
       order: subject.contentTypes.length,
       subTopics: []
     };
@@ -108,12 +110,9 @@ export function EditContentPage() {
     const newName = prompt('Content Type Name:', contentType.name);
     if (!newName) return;
 
-    const newType = prompt('Type (notes/videos/links/mockTests/mcqs/custom):', contentType.type);
-    if (!newType) return;
-
     const updatedContentTypes = subject.contentTypes.map(ct => 
       ct.id === contentTypeId 
-        ? { ...ct, name: newName, type: newType }
+        ? { ...ct, name: newName }
         : ct
     );
 
@@ -122,26 +121,6 @@ export function EditContentPage() {
       contentTypes: updatedContentTypes
     });
     setHasChanges(true);
-  };
-
-  const handleContentTypeImageUpload = (contentTypeId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && subject) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const updatedContentTypes = subject.contentTypes.map(ct => 
-          ct.id === contentTypeId 
-            ? { ...ct, icon: reader.result as string }
-            : ct
-        );
-        setSubject({
-          ...subject,
-          contentTypes: updatedContentTypes
-        });
-        setHasChanges(true);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleDeleteContentType = (id: string) => {
@@ -238,8 +217,26 @@ export function EditContentPage() {
     if (!subject) return;
 
     const currentTopic = getCurrentSubTopic();
-    const newName = prompt('New name:', currentTopic?.name);
-    if (!newName) return;
+    if (!currentTopic) {
+      const contentType = getCurrentContentType();
+      if (!contentType) return;
+      const topic = findSubTopic(contentType.subTopics, id);
+      if (!topic) return;
+      
+      const newName = prompt('Topic Name:', topic.name);
+      if (!newName) return;
+
+      updateTopicName(id, newName);
+    } else {
+      const newName = prompt('Topic Name:', currentTopic.name);
+      if (!newName) return;
+
+      updateTopicName(id, newName);
+    }
+  };
+
+  const updateTopicName = (id: string, newName: string) => {
+    if (!subject) return;
 
     const contentTypeIndex = subject.contentTypes.findIndex(ct => ct.id === activeContentType);
     if (contentTypeIndex === -1) return;
@@ -345,32 +342,45 @@ export function EditContentPage() {
             topic.subTopics && topic.subTopics.length > 0 ? 'has-children' : ''
           }`}
           style={{ paddingLeft: `${0.75 + level * 1}rem` }}
-          onClick={() => setActiveSubTopic(topic.id)}
+          onClick={() => {
+            setActiveSubTopic(topic.id);
+            setActiveSubTopicActions(activeSubTopicActions === topic.id ? '' : topic.id);
+            setRightSidebarOpen(false); // Close sidebar on mobile after selection
+          }}
         >
-          <span>{topic.name}</span>
-          {topic.subTopics && topic.subTopics.length > 0 && (
-            <span
-              className={`chevron ${expandedTopics.includes(topic.id) ? 'expanded' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleExpanded(topic.id);
-              }}
-            >
-              ▶
+          <span>
+            {topic.subTopics && topic.subTopics.length > 0 && (
+              <span
+                className={`chevron ${expandedTopics.includes(topic.id) ? 'expanded' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpanded(topic.id);
+                }}
+              >
+                ▶
+              </span>
+            )}
+            {topic.name}
+          </span>
+          {topic.content && (
+            <span style={{ fontSize: '0.85rem', color: '#10b981' }}>
+              ✓
             </span>
           )}
         </button>
-        <div className="item-actions">
-          <button className="icon-btn icon-btn-add btn-small" onClick={() => handleAddSubTopic(topic.id)}>
-            + Sub
-          </button>
-          <button className="icon-btn btn-small" onClick={() => handleUpdateSubTopicName(topic.id)}>
-            ✏️
-          </button>
-          <button className="icon-btn icon-btn-delete btn-small" onClick={() => handleDeleteSubTopic(topic.id)}>
-            🗑️
-          </button>
-        </div>
+        {activeSubTopicActions === topic.id && (
+          <div className="item-actions">
+            <button className="icon-btn icon-btn-add btn-small" onClick={() => handleAddSubTopic(topic.id)}>
+              + Sub
+            </button>
+            <button className="icon-btn btn-small" onClick={() => handleUpdateSubTopicName(topic.id)}>
+              ✏️
+            </button>
+            <button className="icon-btn icon-btn-delete btn-small" onClick={() => handleDeleteSubTopic(topic.id)}>
+              🗑️
+            </button>
+          </div>
+        )}
         {topic.subTopics && topic.subTopics.length > 0 && expandedTopics.includes(topic.id) && (
           <div className="subtopic-children">
             {renderSubTopics(topic.subTopics, level + 1)}
@@ -404,18 +414,50 @@ export function EditContentPage() {
   return (
     <>
       <Navbar hasUnsavedChanges={hasChanges} />
+      
+      {/* Mobile Toggle Buttons */}
+      <div className="mobile-sidebar-toggles">
+        <button 
+          className="mobile-toggle-btn"
+          onClick={() => {
+            setLeftSidebarOpen(!leftSidebarOpen);
+            setRightSidebarOpen(false);
+          }}
+        >
+           ☰ Content
+        </button>
+        <button 
+          className="mobile-toggle-btn"
+          onClick={() => {
+            setRightSidebarOpen(!rightSidebarOpen);
+            setLeftSidebarOpen(false);
+          }}
+        >
+           ☰ Topics
+        </button>
+      </div>
+
       <div className="content-editor">
         {/* Left Sidebar - Content Types */}
-        <div className="editor-sidebar">
+        <div className={`editor-sidebar editor-sidebar-left ${leftSidebarOpen ? 'mobile-open' : ''}`}>
           <div className="editor-sidebar-header">
-            {subject.name}
+            <span>{subject.name}</span>
+            <button 
+              className="mobile-close-btn"
+              onClick={() => setLeftSidebarOpen(false)}
+            >
+              ✕
+            </button>
           </div>
           <div className="editor-sidebar-content">
             {subject.contentTypes.map(ct => (
               <div key={ct.id}>
                 <div
                   className={`content-type-item ${activeContentType === ct.id ? 'active' : ''}`}
-                  onClick={() => setActiveContentType(ct.id)}
+                  onClick={() => {
+                    setActiveContentType(ct.id);
+                    setLeftSidebarOpen(false); // Close on mobile after selection
+                  }}
                 >
                   {ct.icon && (
                     <img 
@@ -433,32 +475,18 @@ export function EditContentPage() {
                   <span>{ct.name}</span>
                 </div>
                 {activeContentType === ct.id && (
-                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <input
-                      type="file"
-                      id={`ct-image-${ct.id}`}
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => handleContentTypeImageUpload(ct.id, e)}
-                    />
-                    <button 
-                      className="icon-btn btn-small" 
-                      onClick={() => document.getElementById(`ct-image-${ct.id}`)?.click()}
-                      style={{ width: '100%' }}
-                    >
-                      📷 Image
-                    </button>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                     <button 
                       className="icon-btn btn-small" 
                       onClick={() => handleEditContentType(ct.id)}
-                      style={{ width: '100%' }}
+                      style={{ flex: 1 }}
                     >
                       ✏️ Edit
                     </button>
                     <button 
                       className="icon-btn icon-btn-delete btn-small" 
                       onClick={() => handleDeleteContentType(ct.id)}
-                      style={{ width: '100%' }}
+                      style={{ flex: 1 }}
                     >
                       🗑️ Delete
                     </button>
@@ -571,9 +599,15 @@ export function EditContentPage() {
         </div>
 
         {/* Right Sidebar - Subtopics */}
-        <div className="editor-sidebar">
+        <div className={`editor-sidebar editor-sidebar-right ${rightSidebarOpen ? 'mobile-open' : ''}`}>
           <div className="editor-sidebar-header">
-            Topics
+            <span>Topics</span>
+            <button 
+              className="mobile-close-btn"
+              onClick={() => setRightSidebarOpen(false)}
+            >
+              ✕
+            </button>
           </div>
           <div className="editor-sidebar-content">
             {currentContentType && currentContentType.subTopics.length > 0 ? (
@@ -593,6 +627,17 @@ export function EditContentPage() {
           </div>
         </div>
       </div>
+      
+      {/* Mobile Overlay */}
+      {(leftSidebarOpen || rightSidebarOpen) && (
+        <div 
+          className="mobile-overlay"
+          onClick={() => {
+            setLeftSidebarOpen(false);
+            setRightSidebarOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }
