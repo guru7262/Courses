@@ -33,7 +33,7 @@ const createTransporter = () => {
 const sendVerificationEmail = async (email, username, token) => {
   try {
     const transporter = createTransporter();
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/verify-email?token=${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
     
     const mailOptions = {
       from: `"${process.env.APP_NAME || 'Auth System'}" <${process.env.EMAIL_USER}>`,
@@ -96,7 +96,7 @@ const sendVerificationEmail = async (email, username, token) => {
 const sendPasswordResetEmail = async (email, username, token) => {
   try {
     const transporter = createTransporter();
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
     
     const mailOptions = {
       from: `"${process.env.APP_NAME || 'Auth System'}" <${process.env.EMAIL_USER}>`,
