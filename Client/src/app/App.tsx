@@ -11,7 +11,15 @@ import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { NotificationBanner } from "@/app/components/notifications/NotificationBanner";
 import { NotificationsPage } from "@/app/components/notifications/NotificationsPage";
+
+// Auth components
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./components/Login";
+import { Register } from "./components/Register";
+import { ForgotPassword } from "./components/ForgotPassword";
+import { ResetPassword } from "./components/ResetPassword";
+import { VerifyEmail } from "./components/VerifyEmail";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
 
@@ -192,46 +200,58 @@ export default function App() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="edulearn-theme">
-      <BrowserRouter>
-        <div className="flex h-screen flex-col overflow-hidden">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <>
-                  <Navbar showMenuButton={false} />
-                  <NotificationBanner apiUrl={API_BASE_URL} />
-                  <div className="flex-1 overflow-y-auto">
-                    <SubjectsPage />
-                  </div>
-                </>
-              } 
-            />
-            <Route 
-              path="/subject/:subjectId" 
-              element={<SubjectDetailPage />} 
-            />
-            <Route 
-              path="/notifications" 
-              element={
-                <>
-                  <Navbar showMenuButton={false} />
-                  <div className="flex-1 overflow-y-auto">
-                    <NotificationsPage apiUrl={API_BASE_URL} />
-                  </div>
-                </>
-              } 
-            />
-            <Route path="/login" 
-            element={
-                  <Login />
-                   
-                  }
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="flex h-screen flex-col overflow-hidden">
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+
+              {/* Protected Routes */}
+              <Route 
+                path="/" 
+                element={
+                    <>
+                      <Navbar showMenuButton={false} />
+                      <NotificationBanner apiUrl={API_BASE_URL} />
+                      <div className="flex-1 overflow-y-auto">
+                        <SubjectsPage />
+                      </div>
+                    </>
+                  
+                } 
               />
-          </Routes>
-        </div>
-      </BrowserRouter>
+              
+              <Route 
+                path="/subject/:subjectId" 
+                element={
+                
+                    <SubjectDetailPage />
+                  
+                } 
+              />
+              
+              <Route 
+                path="/notifications" 
+                element={
+                  
+                    <>
+                      <Navbar showMenuButton={false} />
+                      <div className="flex-1 overflow-y-auto">
+                        <NotificationsPage apiUrl={API_BASE_URL} />
+                      </div>
+                    </>
+                  
+                } 
+              />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
-    
   );
 }
