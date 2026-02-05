@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/app/components/ui/button";
 import { useTheme } from "@/app/components/ThemeProvider";
 import { NotificationBell } from "@/app/components/notifications/NotificationBell";
+// removed unused Login import; navigation will go to /login route
 import { useRef } from "react";
 
 interface NavbarProps {
