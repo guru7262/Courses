@@ -34,7 +34,19 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
   const [expandedCategoryMobile, setExpandedCategoryMobile] = useState<string | null>(null);
   const [activeContentType, setActiveContentType] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setToken(localStorage.getItem('token'));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // or cookies
+    setToken(null);
+    navigate("/login"); // or /logout
+  };
   const exploreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,13 +74,6 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
     } catch (err) {
       console.error('Error fetching categories:', err);
     }
-  };
-
-  const handleNavigateToContentType = (contentType: string) => {
-    localStorage.setItem('selectedContentType', contentType);
-    setActiveContentType(contentType);
-    navigate('/');
-    setShowMobileMenu(false);
   };
 
   const handleClearContentType = () => {
@@ -188,33 +193,6 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             )}
           </div>
 
-          {/* NOTES */}
-          <Button 
-            variant="ghost" 
-            className={`gap-2 ${activeContentType === 'notes' ? 'bg-accent text-accent-foreground font-medium' : 'text-foreground'}`}
-            onClick={() => handleNavigateToContentType('notes')}
-          >
-            Notes
-          </Button>
-
-          {/* VIDEOS */}
-          <Button 
-            variant="ghost" 
-            className={`gap-2 ${activeContentType === 'videoLectures' ? 'bg-accent text-accent-foreground font-medium' : 'text-foreground'}`}
-            onClick={() => handleNavigateToContentType('videoLectures')}
-          >
-            Videos
-          </Button>
-
-          {/* MOCK TESTS */}
-          <Button 
-            variant="ghost" 
-            className={`gap-2 ${activeContentType === 'mockTests' ? 'bg-accent text-accent-foreground font-medium' : 'text-foreground'}`}
-            onClick={() => handleNavigateToContentType('mockTests')}
-          >
-            Mock Tests
-          </Button>
-
           {/* CONTACT */}
           <div 
             className="relative"
@@ -257,7 +235,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
         </div>
 
         {/* Right section - Notifications + Profile + Mobile Menu */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           {/* Notification Bell - Hidden on mobile */}
           <div className="md:block">
             <NotificationBell apiUrl={API_BASE_URL} />
@@ -267,54 +245,94 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
             {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-            >
-              <User className="h-5 w-5" />
-            </button>
+          <div className="relative flex items-center gap-2">
+  {!token ? (
+    <>
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className="rounded-md p-2 hover:bg-accent transition-colors"
+      >
+        {theme === "dark" ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Moon className="h-4 w-4" />
+        )}
+      </button>
 
-            {showProfileMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowProfileMenu(false)} />
-                <div className="absolute right-0 top-full mt-2 w-48 z-20 overflow-hidden rounded-lg border bg-popover border-border text-popover-foreground shadow-lg">
-                  <div className="p-3 border-b border-border">
-                    <p className="text-sm font-medium">John Doe</p>
-                    <p className="text-xs text-muted-foreground">john@example.com</p>
-                  </div>
-                  <div className="p-1">
-                    <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent transition-colors">
-                      <User className="h-4 w-4" />
-                      Profile
-                    </button>
-                    <button onClick={toggleTheme} className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent transition-colors">
-                      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                    </button>
-                    <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
-                      <X className="h-4 w-4" />
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+      {/* Login */}
+      <button
+        onClick={() => navigate("/login")}
+        className="rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+      >
+        Login
+      </button>
+    </>
+  ) : (
+    <>
+      {/* Profile Avatar */}
+      <button
+        onClick={() => setShowProfileMenu(!showProfileMenu)}
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+      >
+        <User className="h-5 w-5" />
+      </button>
+
+      {showProfileMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setShowProfileMenu(false)}
+          />
+
+          <div className="absolute right-0 top-full mt-2 w-48 z-20 overflow-hidden rounded-lg border bg-popover border-border text-popover-foreground shadow-lg">
+            <div className="p-3 border-b border-border">
+              <p className="text-sm font-medium">John Doe</p>
+              <p className="text-xs text-muted-foreground">
+                john@example.com
+              </p>
+            </div>
+
+            <div className="p-1">
+              <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent">
+                <User className="h-4 w-4" />
+                Profile
+              </button>
+
+              <button
+                onClick={toggleTheme}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+              >
+                Logout
+              </button>
+            </div>
           </div>
+        </>
+      )}
+    </>
+  )}
+</div>
+
         </div>
       </div>
 
       {/* Mobile Menu */}
       {showMobileMenu && (
         <div className="md:hidden border-t border-border bg-background text-foreground overflow-y-auto max-h-[calc(100vh-64px)]">
-          <div className="flex flex-col p-4 gap-2">
-            {/* HOME */}
-            <Link to="/" onClick={() => { handleClearContentType(); setShowMobileMenu(false); }}>
-              <Button variant="ghost" className={`w-full justify-start gap-2 ${location.pathname === '/' && !activeContentType ? 'bg-accent text-accent-foreground' : ''}`}>
-                <Home className="h-4 w-4" /> Home
-              </Button>
-            </Link>
-
+          <div className="flex flex-col">
+            {/* Search will be added here */}
             {/* EXPLORE - Expandable Categories */}
             <div className="border-t border-border pt-2">
               <p className="text-xs font-semibold text-muted-foreground px-3 mb-2">EXPLORE</p>
@@ -342,20 +360,6 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
                   )}
                 </div>
               ))}
-            </div>
-
-            {/* QUICK ACCESS */}
-            <div className="border-t border-border pt-2">
-              <p className="text-xs font-semibold text-muted-foreground px-3 mb-2">QUICK ACCESS</p>
-              <Button variant="ghost" className={`w-full justify-start gap-2 ${activeContentType === 'notes' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('notes')}>
-                <BookOpen className="h-4 w-4" /> Notes
-              </Button>
-              <Button variant="ghost" className={`w-full justify-start gap-2 ${activeContentType === 'videoLectures' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('videoLectures')}>
-                <Video className="h-4 w-4" /> Videos
-              </Button>
-              <Button variant="ghost" className={`w-full justify-start gap-2 ${activeContentType === 'mockTests' ? 'bg-accent text-accent-foreground' : ''}`} onClick={() => handleNavigateToContentType('mockTests')}>
-                <ClipboardList className="h-4 w-4" /> Mock Tests
-              </Button>
             </div>
 
             {/* CONTACT */}

@@ -11,6 +11,7 @@ import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { NotificationBanner } from "@/app/components/notifications/NotificationBanner";
 import { NotificationsPage } from "@/app/components/notifications/NotificationsPage";
+import { Login } from "./components/Login";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
 
@@ -221,9 +222,16 @@ export default function App() {
                 </>
               } 
             />
+            <Route path="/login" 
+            element={
+                  <Login />
+                   
+                  }
+              />
           </Routes>
         </div>
       </BrowserRouter>
     </ThemeProvider>
+    
   );
 }
