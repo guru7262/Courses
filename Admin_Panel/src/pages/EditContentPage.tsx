@@ -250,7 +250,10 @@ export function EditContentPage() {
           return { ...topic, name: newName };
         }
         if (topic.subTopics) {
-          return { ...topic, subTopics: updateInTopics(topic.subTopics) };
+          return {
+            ...topic,
+            subTopics: updateInTopics(topic.subTopics)
+          };
         }
         return topic;
       });
@@ -263,7 +266,7 @@ export function EditContentPage() {
   };
 
   const handleUpdateContent = (field: string, value: any) => {
-    if (!subject) return;
+    if (!subject || !activeSubTopic) return;
 
     const contentTypeIndex = subject.contentTypes.findIndex(ct => ct.id === activeContentType);
     if (contentTypeIndex === -1) return;
@@ -277,8 +280,8 @@ export function EditContentPage() {
           return {
             ...topic,
             content: {
-              type: contentType.type,
-              data: value
+              ...topic.content,
+              [field]: value
             }
           };
         }
@@ -299,11 +302,11 @@ export function EditContentPage() {
   };
 
   const handleSave = async () => {
-    if (!subject || !categoryId) return;
+    if (!subject || !hasChanges) return;
 
     try {
       setSaving(true);
-      const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/subject/${subject.id}`, {
+      const response = await fetch(`${API_BASE_URL}/categories/subject/${subjectId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subject)
@@ -313,7 +316,7 @@ export function EditContentPage() {
 
       setOriginalSubject(JSON.parse(JSON.stringify(subject)));
       setHasChanges(false);
-      alert('Content saved successfully!');
+      alert('Changes saved successfully!');
     } catch (err) {
       console.error('Error:', err);
       alert('Failed to save changes');
@@ -324,70 +327,66 @@ export function EditContentPage() {
 
   const handleBack = () => {
     if (hasChanges) {
-      if (window.confirm('You have unsaved changes. Save before leaving?')) {
-        handleSave().then(() => navigate('/manage-courses'));
-      } else if (window.confirm('Discard all changes?')) {
-        navigate('/manage-courses');
+      if (!window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+        return;
       }
-    } else {
-      navigate('/manage-courses');
     }
+    navigate(`/category/${categoryId}`);
   };
 
-  const renderSubTopics = (topics: SubTopic[], level: number = 0): JSX.Element[] => {
-    return topics.map(topic => (
-      <div key={topic.id} className="subtopic-item">
-        <button
-          className={`subtopic-button ${activeSubTopic === topic.id ? 'active' : ''} ${
-            topic.subTopics && topic.subTopics.length > 0 ? 'has-children' : ''
-          }`}
-          style={{ paddingLeft: `${0.75 + level * 1}rem` }}
-          onClick={() => {
-            setActiveSubTopic(topic.id);
-            setActiveSubTopicActions(activeSubTopicActions === topic.id ? '' : topic.id);
-            setRightSidebarOpen(false); // Close sidebar on mobile after selection
-          }}
-        >
-          <span>
-            {topic.subTopics && topic.subTopics.length > 0 && (
-              <span
-                className={`chevron ${expandedTopics.includes(topic.id) ? 'expanded' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleExpanded(topic.id);
-                }}
-              >
-                ▶
+  const renderSubTopics = (topics: SubTopic[], level: number = 0): JSX.Element => {
+    return (
+      <>
+        {topics.map(topic => (
+          <div key={topic.id} className="subtopic-item">
+            <button
+              className={`subtopic-button ${activeSubTopic === topic.id ? 'active' : ''} ${
+                topic.subTopics && topic.subTopics.length > 0 ? 'has-children' : ''
+              }`}
+              onClick={() => {
+                setActiveSubTopic(topic.id);
+                setActiveSubTopicActions(topic.id === activeSubTopicActions ? '' : topic.id);
+                // Close sidebar on mobile after selection
+                setRightSidebarOpen(false);
+              }}
+            >
+              <span>
+                {topic.subTopics && topic.subTopics.length > 0 && (
+                  <span 
+                    className={`chevron ${expandedTopics.includes(topic.id) ? 'expanded' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpanded(topic.id);
+                    }}
+                  >
+                    ▶
+                  </span>
+                )}
+                {topic.name}
               </span>
+            </button>
+            {activeSubTopicActions === topic.id && (
+              <div className="item-actions">
+                <button className="icon-btn icon-btn-add btn-small" onClick={() => handleAddSubTopic(topic.id)}>
+                  + Sub
+                </button>
+                <button className="icon-btn btn-small" onClick={() => handleUpdateSubTopicName(topic.id)}>
+                  ✏️
+                </button>
+                <button className="icon-btn icon-btn-delete btn-small" onClick={() => handleDeleteSubTopic(topic.id)}>
+                  🗑️
+                </button>
+              </div>
             )}
-            {topic.name}
-          </span>
-          {topic.content && (
-            <span style={{ fontSize: '0.85rem', color: '#10b981' }}>
-              ✓
-            </span>
-          )}
-        </button>
-        {activeSubTopicActions === topic.id && (
-          <div className="item-actions">
-            <button className="icon-btn icon-btn-add btn-small" onClick={() => handleAddSubTopic(topic.id)}>
-              + Sub
-            </button>
-            <button className="icon-btn btn-small" onClick={() => handleUpdateSubTopicName(topic.id)}>
-              ✏️
-            </button>
-            <button className="icon-btn icon-btn-delete btn-small" onClick={() => handleDeleteSubTopic(topic.id)}>
-              🗑️
-            </button>
+            {topic.subTopics && topic.subTopics.length > 0 && expandedTopics.includes(topic.id) && (
+              <div className="subtopic-children">
+                {renderSubTopics(topic.subTopics, level + 1)}
+              </div>
+            )}
           </div>
-        )}
-        {topic.subTopics && topic.subTopics.length > 0 && expandedTopics.includes(topic.id) && (
-          <div className="subtopic-children">
-            {renderSubTopics(topic.subTopics, level + 1)}
-          </div>
-        )}
-      </div>
-    ));
+        ))}
+      </>
+    );
   };
 
   if (loading) {
@@ -424,7 +423,7 @@ export function EditContentPage() {
             setRightSidebarOpen(false);
           }}
         >
-           ☰ Content
+          ☰ Content
         </button>
         <button 
           className="mobile-toggle-btn"
@@ -433,7 +432,7 @@ export function EditContentPage() {
             setLeftSidebarOpen(false);
           }}
         >
-           ☰ Topics
+          ☰ Topics
         </button>
       </div>
 
