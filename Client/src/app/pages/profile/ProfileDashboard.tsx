@@ -244,7 +244,7 @@ export function ProfileDashboard() {
             <p className="text-sm text-muted-foreground">Videos Watched</p>
           </div>
 
-          {/* Notes Created */}
+          {/* Notes Read */}
           <div className="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-purple-500/10 rounded-lg">
@@ -255,7 +255,7 @@ export function ProfileDashboard() {
             <h3 className="text-2xl font-bold text-foreground mb-1">
               {profile.activityStats.totalNotesCreated}
             </h3>
-            <p className="text-sm text-muted-foreground">Notes Created</p>
+            <p className="text-sm text-muted-foreground">Notes Read</p>
           </div>
 
           {/* Quizzes Taken */}
