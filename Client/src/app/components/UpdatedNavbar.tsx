@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
-import { Menu, X, User, Home, BookOpen, Video, ClipboardList, ChevronDown, ChevronRight, Mail, Github, Linkedin, Youtube, Moon, Sun } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Menu, X, User, Home, ChevronDown, ChevronRight, Github, Linkedin, Youtube, Moon, Sun, Settings } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/app/components/ui/button";
 import { useTheme } from "@/app/components/ThemeProvider";
 import { NotificationBell } from "@/app/components/notifications/NotificationBell";
-// removed unused Login import; navigation will go to /login route
-import { useRef } from "react";
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -23,7 +21,16 @@ interface Category {
   subjects: Subject[];
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string)
+interface UserData {
+  username: string;
+  email: string;
+  profile?: {
+    fullName?: string;
+    profilePicture?: string;
+  };
+}
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string);
 
 export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -35,18 +42,55 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
   const [activeContentType, setActiveContentType] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [token, setToken] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setToken(localStorage.getItem('token'));
+      const storedToken = localStorage.getItem('token');
+      setToken(storedToken);
+      
+      // Fetch user data if token exists
+      if (storedToken) {
+        fetchUserData(storedToken);
+      }
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token"); // or cookies
-    setToken(null);
-    navigate("/login"); // or /logout
+  const fetchUserData = async (authToken: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
   };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem("token");
+      setToken(null);
+      setUserData(null);
+      navigate("/login");
+    }
+  };
+
   const exploreTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const contactTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const categoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -96,24 +140,28 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const getInitials = () => {
+    if (userData?.profile?.fullName) {
+      return userData.profile.fullName
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return userData?.username?.slice(0, 2).toUpperCase() || 'U';
+  };
+
   return (
-    <nav className=" relative sticky top-0 z-50 w-full border-b bg-background border-border shadow-sm">
+    <nav className="relative sticky top-0 z-50 w-full border-b bg-background border-border shadow-sm">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         
-        {/*glow effect*/}
-<div className="absolute inset-0 overflow-hidden pointer-events-none">
-  <div
-  className="pointer-events-none absolute inset-x-0 -bottom-20 h-64
-             bg-gradient-to-b from-primary/30 via-primary/10 to-transparent
-             blur-3xl opacity-40"
-/>
+        {/* Glow effect */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="pointer-events-none absolute inset-x-0 -bottom-20 h-64 bg-gradient-to-b from-primary/30 via-primary/10 to-transparent blur-3xl opacity-40" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
+        </div>
 
-<div className="absolute inset-x-0 bottom-0 h-px 
-                bg-gradient-to-r from-transparent via-primary to-transparent 
-                opacity-60" />
-</div>
-
-        
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
@@ -237,94 +285,124 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
         {/* Right section - Notifications + Profile + Mobile Menu */}
         <div className="flex items-center gap-4">
           {/* Notification Bell - Hidden on mobile */}
-          <div className="md:block">
-            <NotificationBell apiUrl={API_BASE_URL} />
-          </div>
+          {token && (
+            <div className="hidden md:block">
+              <NotificationBell apiUrl={API_BASE_URL} />
+            </div>
+          )}
 
           <Button variant="ghost" size="icon" onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden text-foreground">
             {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
 
           <div className="relative flex items-center gap-2">
-  {!token ? (
-    <>
-      {/* Theme Toggle */}
-      <button
-        onClick={toggleTheme}
-        className="rounded-md p-2 hover:bg-accent transition-colors"
-      >
-        {theme === "dark" ? (
-          <Sun className="h-4 w-4" />
-        ) : (
-          <Moon className="h-4 w-4" />
-        )}
-      </button>
+            {!token ? (
+              <>
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="rounded-md p-2 hover:bg-accent transition-colors"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                </button>
 
-      {/* Login */}
-      <button
-        onClick={() => navigate("/login")}
-        className="rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
-      >
-        Login
-      </button>
-    </>
-  ) : (
-    <>
-      {/* Profile Avatar */}
-      <button
-        onClick={() => setShowProfileMenu(!showProfileMenu)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-      >
-        <User className="h-5 w-5" />
-      </button>
+                {/* Login */}
+                <button
+                  onClick={() => navigate("/login")}
+                  className="rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+                >
+                  Login
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Profile Avatar */}
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-semibold text-sm"
+                >
+                  {userData?.profile?.profilePicture ? (
+                    <img 
+                      src={userData.profile.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    getInitials()
+                  )}
+                </button>
 
-      {showProfileMenu && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setShowProfileMenu(false)}
-          />
+                {showProfileMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowProfileMenu(false)}
+                    />
 
-          <div className="absolute right-0 top-full mt-2 w-48 z-20 overflow-hidden rounded-lg border bg-popover border-border text-popover-foreground shadow-lg">
-            <div className="p-3 border-b border-border">
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-muted-foreground">
-                john@example.com
-              </p>
-            </div>
+                    <div className="absolute right-0 top-full mt-2 w-56 z-20 overflow-hidden rounded-lg border bg-popover border-border text-popover-foreground shadow-lg">
+                      <div className="p-3 border-b border-border">
+                        <p className="text-sm font-medium truncate">
+                          {userData?.profile?.fullName || userData?.username || 'User'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {userData?.email || 'user@example.com'}
+                        </p>
+                      </div>
 
-            <div className="p-1">
-              <button className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent">
-                <User className="h-4 w-4" />
-                Profile
-              </button>
+                      <div className="p-1">
+                        <button 
+                          onClick={() => {
+                            navigate('/profile');
+                            setShowProfileMenu(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                        >
+                          <User className="h-4 w-4" />
+                          Profile
+                        </button>
 
-              <button
-                onClick={toggleTheme}
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
+                        <button 
+                          onClick={() => {
+                            navigate('/profile/settings');
+                            setShowProfileMenu(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </button>
+
+                        <button
+                          onClick={toggleTheme}
+                          className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                        >
+                          {theme === "dark" ? (
+                            <Sun className="h-4 w-4" />
+                          ) : (
+                            <Moon className="h-4 w-4" />
+                          )}
+                          {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                        </button>
+
+                        <div className="my-1 h-px bg-border" />
+
+                        <button
+                          onClick={handleLogout}
+                          className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 )}
-                {theme === "dark" ? "Light Mode" : "Dark Mode"}
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
-              >
-                Logout
-              </button>
-            </div>
+              </>
+            )}
           </div>
-        </>
-      )}
-    </>
-  )}
-</div>
-
         </div>
       </div>
 
@@ -332,7 +410,6 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
       {showMobileMenu && (
         <div className="md:hidden border-t border-border bg-background text-foreground overflow-y-auto max-h-[calc(100vh-64px)]">
           <div className="flex flex-col">
-            {/* Search will be added here */}
             {/* EXPLORE - Expandable Categories */}
             <div className="border-t border-border pt-2">
               <p className="text-xs font-semibold text-muted-foreground px-3 mb-2">EXPLORE</p>

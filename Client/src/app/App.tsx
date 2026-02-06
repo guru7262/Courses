@@ -4,14 +4,16 @@ declare module "*.css";
 
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from "react-router-dom";
-import { Navbar } from "@/app/components/Navbar";
+import { Navbar } from "@/app/components/UpdatedNavbar";
 import { Footer } from "@/app/components/Footer";
 import { SubjectSelectionPage } from "@/app/components/SubjectSelectionPage";
 import { SubjectContentPage } from "@/app/components/SubjectContentPage";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { NotificationBanner } from "@/app/components/notifications/NotificationBanner";
 import { NotificationsPage } from "@/app/components/notifications/NotificationsPage";
-
+import { ProfileDashboard } from './pages/profile/ProfileDashboard';
+   import { EditProfile } from './pages/profile/EditProfile';
+  
 // Auth components
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -248,6 +250,8 @@ export default function App() {
                   
                 } 
               />
+               <Route path="/profile" element={<ProfileDashboard />} />
+   <Route path="/profile/edit" element={<EditProfile />} />
             </Routes>
           </div>
         </BrowserRouter>
