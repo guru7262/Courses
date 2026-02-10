@@ -201,7 +201,7 @@ export default function App() {
   console.log("API URL:", API_BASE_URL);
 
   return (
-    <ThemeProvider defaultTheme="light" storageKey="edulearn-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="edulearn-theme">
       <AuthProvider>
         <BrowserRouter>
           <div className="flex h-screen flex-col overflow-hidden">
