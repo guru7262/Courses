@@ -204,7 +204,6 @@ export function PathwayBanner({
         {/* Left: icon + label */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="flex-shrink-0 flex items-center gap-1.5 text-primary">
-            <BookOpen className="h-4 w-4" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden sm:inline">
               Pathway
             </span>

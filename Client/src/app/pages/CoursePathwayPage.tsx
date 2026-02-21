@@ -236,7 +236,7 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
     ? <span className="flex items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Locked</span>
     : isCompleted
     ? <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium"><CheckCircle2 className="h-3 w-3" /> Completed</span>
-    : <span className="flex items-center gap-1 text-xs text-primary font-medium"><Flame className="h-3 w-3" /> Active</span>;
+    : <span className="flex items-center gap-1 text-xs text-primary font-medium"> Active</span>;
 
   return (
     <div
@@ -358,12 +358,12 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium
                         ${studied ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
-                        <BookOpen className="h-3 w-3" />
+                        
                         {studied ? 'Studied' : 'Study'}
                       </span>
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium
                         ${mockDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
-                        <Target className="h-3 w-3" />
+                        
                         {block.mockTest.result
                           ? `Mock: ${block.mockTest.result.scorePercent}%`
                           : 'Mock Test'
@@ -659,9 +659,9 @@ export function CoursePathwayPage({
         {/* Summary stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
-            { icon: <BarChart2 className="h-4 w-4" />, label: 'Progress', value: `${pathway.overallProgressPercent}%` },
-            { icon: <BookOpen className="h-4 w-4" />, label: 'Subjects/day', value: pathway.targets.subjectsPerDay },
-            { icon: <Clock className="h-4 w-4" />, label: 'Hours/day', value: `${pathway.targets.hoursPerDay}h` },
+            {  label: 'Progress', value: `${pathway.overallProgressPercent}%` },
+            { label: 'Subjects/day', value: pathway.targets.subjectsPerDay },
+            {  label: 'Hours/day', value: `${pathway.targets.hoursPerDay}h` },
           ].map(({ icon, label, value }) => (
             <div key={label} className="rounded-xl border border-border bg-card p-3 text-center">
               <div className="flex justify-center text-primary mb-1">{icon}</div>
@@ -700,7 +700,7 @@ export function CoursePathwayPage({
         {pathway.overallStatus === 'completed' && (
           <div className="mt-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
             <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
-            <h3 className="text-lg font-bold text-foreground">Pathway Complete! 🎉</h3>
+            <h3 className="text-lg font-bold text-foreground">Pathway Complete! </h3>
             <p className="text-sm text-muted-foreground mt-1">
               You've finished all {pathway.totalSteps} steps of your {pathway.targets.categoryName} pathway.
             </p>

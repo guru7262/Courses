@@ -120,12 +120,10 @@ useEffect(() => {
                     className="glow-card group relative overflow-hidden rounded-lg border border-border bg-card p-6 text-left shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <div className="relative z-10 pointer-events-none">
-                      <div
-                        className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg text-xl"
-                        style={{ backgroundColor: `${subject.color}20` }}
-                      >
-                        {subject.icon}
-                      </div>
+                      
+  <div className="icon-wrapper">
+    <img src={subject.icon} alt={subject.name} className="subject-icon" />
+  </div>
 
                       <h3 className="text-xl font-medium text-foreground mb-2">
                         {subject.name}

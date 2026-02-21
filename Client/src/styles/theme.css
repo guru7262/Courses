@@ -261,3 +261,28 @@
     position: relative;
     z-index: 2; 
 }
+
+.subject-card {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Makes square card */
+  padding: 1rem;
+  border-radius: 16px;
+  background: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.icon-wrapper {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subject-icon {
+  max-width: 70%;
+  max-height: 70%;
+  object-fit: contain;
+}
