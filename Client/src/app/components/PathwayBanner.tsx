@@ -92,7 +92,7 @@ function getStepLabel(step: PathwayStep): string {
     b => b.studyStatus !== 'completed' || b.mockTest.status === 'pending'
   );
   if (pending) {
-    const studyDone  = pending.studyStatus === 'completed';
+    const studyDone = pending.studyStatus === 'completed';
     // Use full breadcrumb trail if available, otherwise just the topic name
     const topicLabel = pending.breadcrumb && pending.breadcrumb.length > 0
       ? pending.breadcrumb.join(' › ')
@@ -105,9 +105,9 @@ function getStepLabel(step: PathwayStep): string {
 function getStepAction(step: PathwayStep): string {
   if (step.status === 'completed') return 'Review';
   const allStudied = step.subjectBlocks.every(b => b.studyStatus === 'completed');
-  const allMocked  = step.subjectBlocks.every(b => b.mockTest.status === 'completed' || b.mockTest.status === 'skipped');
+  const allMocked = step.subjectBlocks.every(b => b.mockTest.status === 'completed' || b.mockTest.status === 'skipped');
   if (!allStudied) return 'Study';
-  if (!allMocked)  return 'Mock Test';
+  if (!allMocked) return 'Mock Test';
   if (step.revision && step.revision.status !== 'completed') return 'Revise';
   return 'Continue';
 }
@@ -178,9 +178,40 @@ export function PathwayBanner({
   const currentStep = pathway.steps[pathway.currentStepIndex];
   if (!currentStep) return null;
 
-  const label  = getStepLabel(currentStep);
+  const label = getStepLabel(currentStep);
   const action = getStepAction(currentStep);
-  const pct    = pathway.overallProgressPercent;
+
+  // ── Granular progress: same localStorage-based calculation as CoursePathwayPage ──
+  const flattenIds = (topics: any[]): string[] => {
+    const ids: string[] = [];
+    for (const t of topics) {
+      if (t.content || (!t.subTopics?.length)) ids.push(t.id || t._id);
+      if (t.subTopics?.length) ids.push(...flattenIds(t.subTopics));
+    }
+    return ids;
+  };
+
+  let totalTopics = 0;
+  let completedCount = 0;
+
+  for (const block of currentStep.subjectBlocks) {
+    const leafIds = flattenIds(block.subTopics || []);
+    const blockLeaves = leafIds.length > 0 ? leafIds : [block.topicId];
+    totalTopics += blockLeaves.length;
+
+    const mainContentType = (block.contentTypeIds || [])[0];
+    if (mainContentType) {
+      try {
+        const saved = localStorage.getItem(`progress_${block.subjectId}_${mainContentType}`);
+        if (saved) {
+          const completed: string[] = JSON.parse(saved);
+          completedCount += blockLeaves.filter((id: string) => completed.includes(id)).length;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  const pct = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0;
 
   // Find the first actionable block to deep-link into
   const actionableBlock = currentStep.subjectBlocks.find(

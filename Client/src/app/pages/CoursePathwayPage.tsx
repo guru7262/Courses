@@ -115,18 +115,18 @@ interface SetupModalProps {
 }
 
 function SetupModal({ categories, onSubmit, onClose, loading }: SetupModalProps) {
-  const [categoryId, setCategoryId]       = useState(categories[0]?.id || '');
-  const [subjectsPerDay, setSubjects]     = useState(2);
-  const [mockTestsPerDay, setMocks]       = useState(1);
-  const [hoursPerDay, setHours]           = useState(3);
+  const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
+  const [subjectsPerDay, setSubjects] = useState(2);
+  const [mockTestsPerDay, setMocks] = useState(1);
+  const [hoursPerDay, setHours] = useState(3);
 
   return (
 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      
+
       <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl">
         <div className="flex items-center gap-3 mb-6">
-        
+
           <div>
             <h2 className="text-lg font-bold text-foreground">Set Up Your Pathway</h2>
             <p className="text-xs text-muted-foreground">Personalise your daily study targets</p>
@@ -150,13 +150,13 @@ function SetupModal({ categories, onSubmit, onClose, loading }: SetupModalProps)
 
           {/* Targets */}
           {[
-            { label: 'Subjects per day',  val: subjectsPerDay,  set: setSubjects, min: 1, max: 6 },
-            { label: 'Mock tests per day', val: mockTestsPerDay, set: setMocks,    min: 0, max: 6 },
-            { label: 'Hours per day',  val: hoursPerDay,     set: setHours,    min: 1, max: 12 },
-          ].map(({ label, icon, val, set, min, max }) => (
+            { label: 'Subjects per day', val: subjectsPerDay, set: setSubjects, min: 1, max: 6 },
+            { label: 'Mock tests per day', val: mockTestsPerDay, set: setMocks, min: 0, max: 6 },
+            { label: 'Hours per day', val: hoursPerDay, set: setHours, min: 1, max: 12 },
+          ].map(({ label, val, set, min, max }) => (
             <div key={label}>
               <label className="text-sm font-medium text-foreground mb-2 flex items-center gap-1.5">
-                {icon} {label}
+                {label}
               </label>
               <div className="flex items-center gap-3">
                 <button
@@ -202,26 +202,39 @@ function SetupModal({ categories, onSubmit, onClose, loading }: SetupModalProps)
 interface StepCardProps {
   step: PathwayStep;
   isCurrent: boolean;
+  isLastStep: boolean;
   onNavigate?: (subjectId: string, topicId: string, contentTypeId?: string) => void;
+  onCompleteStep?: () => Promise<void>;
 }
 
-function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
+function StepCard({ step, isCurrent, isLastStep, onNavigate, onCompleteStep }: StepCardProps) {
   const [expanded, setExpanded] = useState(isCurrent);
+  const [completing, setCompleting] = useState(false);
 
-  const isLocked    = step.status === 'locked';
+  const isLocked = step.status === 'locked';
   const isCompleted = step.status === 'completed';
-  const isActive    = step.status === 'active';
+  const isActive = step.status === 'active';
 
   // Determine the overall phase of this step
   const studyBlocksDone = step.subjectBlocks.filter(b => b.studyStatus === 'completed').length;
-  const mocksDone       = step.subjectBlocks.filter(b => b.mockTest.status === 'completed' || b.mockTest.status === 'skipped').length;
-  const totalBlocks     = step.subjectBlocks.length;
-  const allMocksDone    = mocksDone === totalBlocks;
-  const inRevision      = allMocksDone && step.revision && step.revision.status !== 'completed';
+  const mocksDone = step.subjectBlocks.filter(b => b.mockTest.status === 'completed' || b.mockTest.status === 'skipped').length;
+  const totalBlocks = step.subjectBlocks.length;
+  const allMocksDone = mocksDone === totalBlocks;
+  const inRevision = allMocksDone && step.revision && step.revision.status !== 'completed';
+
+  // Backend has no hard gates — students are free to advance at any time.
+  // Show the button whenever the step is active.
+  const stepReadyToComplete = isActive;
+
+  const handleComplete = async () => {
+    if (!onCompleteStep || completing) return;
+    setCompleting(true);
+    try { await onCompleteStep(); } finally { setCompleting(false); }
+  };
 
   // Average score across completed mocks
-  const completedMocks  = step.subjectBlocks.filter(b => b.mockTest.result);
-  const avgScore        = completedMocks.length > 0
+  const completedMocks = step.subjectBlocks.filter(b => b.mockTest.result);
+  const avgScore = completedMocks.length > 0
     ? Math.round(completedMocks.reduce((s, b) => s + (b.mockTest.result?.scorePercent || 0), 0) / completedMocks.length)
     : null;
 
@@ -235,17 +248,17 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
   const statusPill = isLocked
     ? <span className="flex items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" /> Locked</span>
     : isCompleted
-    ? <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium"><CheckCircle2 className="h-3 w-3" /> Completed</span>
-    : <span className="flex items-center gap-1 text-xs text-primary font-medium"> Active</span>;
+      ? <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium"><CheckCircle2 className="h-3 w-3" /> Completed</span>
+      : <span className="flex items-center gap-1 text-xs text-primary font-medium"> Active</span>;
 
   return (
     <div
       className={`
         rounded-2xl border transition-all duration-200
-        ${isLocked    ? 'border-border bg-muted/30 opacity-60' : ''}
+        ${isLocked ? 'border-border bg-muted/30 opacity-60' : ''}
         ${isCompleted ? 'border-emerald-500/20 bg-emerald-500/5' : ''}
-        ${isActive    ? 'border-primary/30 bg-card shadow-sm' : ''}
-        ${isCurrent   ? 'ring-2 ring-primary/20' : ''}
+        ${isActive ? 'border-primary/30 bg-card shadow-sm' : ''}
+        ${isCurrent ? 'ring-2 ring-primary/20' : ''}
       `}
     >
       {/* Card header */}
@@ -303,11 +316,11 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
       {/* Expanded body */}
       {expanded && !isLocked && (
         <div className="px-5 pb-5 space-y-3 border-t border-border/50 pt-4">
-          
+
           {/* Subject blocks */}
           {step.subjectBlocks.map((block, idx) => {
-            const studied   = block.studyStatus === 'completed';
-            const mockDone  = block.mockTest.status === 'completed' || block.mockTest.status === 'skipped';
+            const studied = block.studyStatus === 'completed';
+            const mockDone = block.mockTest.status === 'completed' || block.mockTest.status === 'skipped';
             const blockDone = studied && mockDone;
 
             return (
@@ -358,12 +371,12 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium
                         ${studied ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
-                        
+
                         {studied ? 'Studied' : 'Study'}
                       </span>
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium
                         ${mockDone ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
-                        
+
                         {block.mockTest.result
                           ? `Mock: ${block.mockTest.result.scorePercent}%`
                           : 'Mock Test'
@@ -381,8 +394,8 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
                         ${!studied
                           ? 'bg-primary text-primary-foreground hover:opacity-90'
                           : !mockDone
-                          ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20'
-                          : 'bg-muted text-muted-foreground border border-border hover:bg-muted/80'
+                            ? 'bg-amber-500/10 text-amber-600 border border-amber-500/30 hover:bg-amber-500/20'
+                            : 'bg-muted text-muted-foreground border border-border hover:bg-muted/80'
                         }
                       `}
                     >
@@ -450,6 +463,23 @@ function StepCard({ step, isCurrent, onNavigate }: StepCardProps) {
               </div>
             </div>
           )}
+
+          {/* Complete Step → Unlock Next button */}
+          {stepReadyToComplete && (
+            <button
+              onClick={handleComplete}
+              disabled={completing}
+              className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {completing
+                ? 'Unlocking…'
+                : isLastStep
+                  ? 'Complete Pathway 🎉'
+                  : 'Complete Step & Unlock Next'
+              }
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -462,13 +492,14 @@ export function CoursePathwayPage({
   onNavigate,
   onSetupPathway,
 }: CoursePathwayPageProps) {
-  const navigate  = useNavigate();
-  const [pathway, setPathway]         = useState<Pathway | null>(null);
-  const [categories, setCategories]   = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [showSetup, setShowSetup]     = useState(false);
+  const navigate = useNavigate();
+  const [pathway, setPathway] = useState<Pathway | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showSetup, setShowSetup] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
-  const [error, setError]             = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPathway();
@@ -478,7 +509,7 @@ export function CoursePathwayPage({
   const fetchPathway = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`${API_BASE_URL}/pathway`, {
+      const res = await fetch(`${API_BASE_URL}/pathway`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -519,7 +550,7 @@ export function CoursePathwayPage({
     setSetupLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res   = await fetch(`${API_BASE_URL}/pathway/init`, {
+      const res = await fetch(`${API_BASE_URL}/pathway/init`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -551,6 +582,26 @@ export function CoursePathwayPage({
     }
   };
 
+  const handleCompleteStep = async () => {
+    setStepError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/pathway/next-step`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        // Refresh the full pathway so UI updates
+        await fetchPathway();
+      } else {
+        const err = await res.json();
+        setStepError(err.message || 'Failed to advance to next step.');
+      }
+    } catch {
+      setStepError('Network error while advancing step.');
+    }
+  };
+
   // ── Loading ──
   if (loading) {
     return (
@@ -570,7 +621,7 @@ export function CoursePathwayPage({
     return (
 
       <div className="flex flex-col min-h-full bg-background">
-        <Navbar/>
+        <Navbar />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -608,7 +659,7 @@ export function CoursePathwayPage({
   if (error) {
     return (
       <div className="flex flex-col min-h-full bg-background">
-        <Navbar/>
+        <Navbar />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-3" />
@@ -627,7 +678,7 @@ export function CoursePathwayPage({
 
   return (
     <div className="flex flex-col min-h-full bg-background">
-      <Navbar/>
+      <Navbar />
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6">
 
         {/* Back */}
@@ -659,40 +710,93 @@ export function CoursePathwayPage({
         {/* Summary stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
-            {  label: 'Progress', value: `${pathway.overallProgressPercent}%` },
+            { label: 'Step', value: `${pathway.currentStepIndex + 1} / ${pathway.totalSteps}` },
             { label: 'Subjects/day', value: pathway.targets.subjectsPerDay },
-            {  label: 'Hours/day', value: `${pathway.targets.hoursPerDay}h` },
-          ].map(({ icon, label, value }) => (
+            { label: 'Hours/day', value: `${pathway.targets.hoursPerDay}h` },
+          ].map(({ label, value }) => (
             <div key={label} className="rounded-xl border border-border bg-card p-3 text-center">
-              <div className="flex justify-center text-primary mb-1">{icon}</div>
               <div className="text-lg font-bold text-foreground">{value}</div>
+
               <div className="text-xs text-muted-foreground">{label}</div>
             </div>
           ))}
         </div>
 
-        {/* Overall progress bar */}
-        <div className="mb-6">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-            <span>Overall progress</span>
-            <span>{pathway.overallProgressPercent}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-700"
-              style={{ width: `${pathway.overallProgressPercent}%` }}
-            />
-          </div>
-        </div>
+        {/* Current step progress bar */}
+        {(() => {
+          const currentStep = pathway.steps[pathway.currentStepIndex];
+          if (!currentStep || currentStep.status !== 'active') return null;
+
+          // Flatten a subtopic tree into leaf topic IDs
+          const flattenIds = (topics: any[]): string[] => {
+            const ids: string[] = [];
+            for (const t of topics) {
+              if (t.content || (!t.subTopics?.length)) ids.push(t.id || t._id);
+              if (t.subTopics?.length) ids.push(...flattenIds(t.subTopics));
+            }
+            return ids;
+          };
+
+          let totalTopics = 0;
+          let completedCount = 0;
+
+          for (const block of currentStep.subjectBlocks) {
+            const leafIds = flattenIds(block.subTopics || []);
+            // If no leaves from the tree, count the block's own topic as 1
+            const blockLeaves = leafIds.length > 0 ? leafIds : [block.topicId];
+            totalTopics += blockLeaves.length;
+
+            // Check localStorage for each content type
+            const contentTypes = block.contentTypeIds || [];
+            const mainContentType = contentTypes[0]; // notes is usually first
+            if (mainContentType) {
+              try {
+                const saved = localStorage.getItem(`progress_${block.subjectId}_${mainContentType}`);
+                if (saved) {
+                  const completed: string[] = JSON.parse(saved);
+                  completedCount += blockLeaves.filter(id => completed.includes(id)).length;
+                }
+              } catch { /* ignore */ }
+            }
+          }
+
+          const stepPercent = totalTopics > 0 ? Math.round((completedCount / totalTopics) * 100) : 0;
+
+          return (
+            <div className="mb-6">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Step {currentStep.stepNumber} progress</span>
+                <span>{stepPercent}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-700"
+                  style={{ width: `${stepPercent}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Step {pathway.currentStepIndex + 1} of {pathway.totalSteps} · {completedCount} / {totalTopics} topics completed
+              </p>
+            </div>
+          );
+        })()}
 
         {/* ── Step list ── */}
+        {stepError && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            {stepError}
+          </div>
+        )}
         <div className="space-y-3">
           {pathway.steps.map((step, idx) => (
             <StepCard
               key={step.stepNumber}
               step={step}
               isCurrent={idx === pathway.currentStepIndex && step.status === 'active'}
+              isLastStep={idx === pathway.steps.length - 1}
               onNavigate={handleNavigate}
+              onCompleteStep={idx === pathway.currentStepIndex ? handleCompleteStep : undefined}
             />
           ))}
         </div>
