@@ -3,8 +3,9 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import { Footer } from "@/app/components/Footer";
 import React from 'react';
 import { CoursePathwayPage } from '@/app/pages/CoursePathwayPage';
-import { Navigate } from "react-router-dom";
 import { PathwayBanner } from "./PathwayBanner";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 interface Subject {
   id: string;
   name: string;
@@ -43,6 +44,26 @@ export function SubjectSelectionPage({
     card.style.setProperty('--y', `${y}px`);
   };
 
+const navigate = useNavigate();
+
+const [pathway, setPathway] = useState(null);
+const [pathwayLoading, setPathwayLoading] = useState(true);
+
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setPathwayLoading(false);
+    return;
+  }
+
+  fetch(`${import.meta.env.VITE_API_URL}/pathway`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(r => (r.ok ? r.json() : null))
+    .then(d => setPathway(d?.pathway ?? null))
+    .finally(() => setPathwayLoading(false));
+}, []);
+
 
   if (loading) {
     return (
@@ -62,6 +83,20 @@ export function SubjectSelectionPage({
   return (
 
     <div className="flex flex-col min-h-full">
+
+<PathwayBanner
+    pathway={pathway}
+    loading={pathwayLoading}
+    onViewAll={() => navigate("/pathway")}
+    onNavigate={(subjectId, topicId, contentTypeId) =>
+      navigate(
+        `/subject/${subjectId}?topic=${topicId}${
+          contentTypeId ? `&tab=${contentTypeId}` : ""
+        }`
+      )
+    }
+  />
+
       
       <div className="bg-background p-4 md:p-8 flex-1">
         

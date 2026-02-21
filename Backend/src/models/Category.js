@@ -4,8 +4,6 @@ const mongoose = require('mongoose');
 const ContentDataSchema = new mongoose.Schema({
   type: {
     type: String,
-    required: true,
-    enum: ['notes', 'videos', 'links', 'mockTests', 'mcqs', 'custom']
   },
   data: {
     type: mongoose.Schema.Types.Mixed, // Flexible data structure

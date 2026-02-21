@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { X, Menu, ChevronRight, BookOpen, Video, ClipboardList, Link as LinkIcon, HelpCircle } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
@@ -42,6 +42,8 @@ interface SubjectContentPageProps {
   loading?: boolean;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 const getContentTypeIcon = (type: string) => {
   switch (type) {
     case 'notes': return <BookOpen className="h-5 w-5" />;
@@ -58,7 +60,7 @@ export function SubjectContentPage({
   loading = false,
 }: SubjectContentPageProps) {
   const [searchParams] = useSearchParams();
-
+  const navigate = useNavigate();
   const [activeContentType, setActiveContentType] = useState(
     subjectContent?.contentTypes?.[0]?.id || ""
   );
@@ -138,6 +140,8 @@ useEffect(() => {
     return null;
   };
 
+
+  
   // Helper to find matching topic by hierarchy path
   const findMatchingTopicByName = (topics: SubTopic[], currentTopicId: string): SubTopic | null => {
     // First, try to find the exact same topic by name in the previous content type
@@ -368,9 +372,9 @@ useEffect(() => {
                 <div key={idx} className="bg-card text-card-foreground rounded-lg p-6 shadow-sm border border-border">
                   <h3 className="font-semibold text-xl mb-2">{test.title}</h3>
                   <div className="flex gap-4 text-sm text-muted-foreground mb-4">
-                    <span>⏱️ {test.duration} minutes</span>
-                    <span>📊 {test.totalMarks} marks</span>
-                    <span>❓ {test.questions?.length || 0} questions</span>
+                    <span> {test.duration} minutes</span>
+                    <span> {test.totalMarks} marks</span>
+                    <span> {test.questions?.length || 0} questions</span>
                   </div>
                   <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition">
                     Start Test
@@ -466,9 +470,9 @@ useEffect(() => {
     <PathwayBanner
          pathway={pathway}
          loading={pathwayLoading}
-         onViewAll={() => Navigate('/pathway')}
+         onViewAll={() => navigate('/pathway')}
          onNavigate={(subjectId, topicId, contentTypeId) =>
-           Navigate(`/subject/${subjectId}?topic=${topicId}${contentTypeId ? `&tab=${contentTypeId}` : ''}`)
+           navigate(`/subject/${subjectId}?topic=${topicId}${contentTypeId ? `&tab=${contentTypeId}` : ''}`)
          }
        />
       <div className="flex flex-col md:flex-row relative bg-background text-foreground">

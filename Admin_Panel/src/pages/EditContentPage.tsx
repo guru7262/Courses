@@ -40,7 +40,7 @@ export function EditContentPage() {
   const fetchSubject = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/subject/${subjectId}`);
+      const response = await fetch(`${API_BASE_URL}/categories/subject/${subjectId}`);
       if (!response.ok) throw new Error('Failed to fetch subject');
       const data = await response.json();
       setSubject(data);

@@ -20,7 +20,7 @@ import {
   RefreshCw, ChevronDown, ChevronUp, AlertCircle, Sparkles
 } from 'lucide-react';
 import { Footer } from '@/app/components/Footer';
-
+import { Navbar } from "@/app/components/UpdatedNavbar";
 const API_BASE_URL = import.meta.env.VITE_API_URL as string;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -121,10 +121,12 @@ function SetupModal({ categories, onSubmit, onClose, loading }: SetupModalProps)
   const [hoursPerDay, setHours]           = useState(3);
 
   return (
+
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      
       <div className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl">
         <div className="flex items-center gap-3 mb-6">
-          
+        
           <div>
             <h2 className="text-lg font-bold text-foreground">Set Up Your Pathway</h2>
             <p className="text-xs text-muted-foreground">Personalise your daily study targets</p>
@@ -566,7 +568,9 @@ export function CoursePathwayPage({
   // ── No pathway ──
   if (!pathway) {
     return (
+
       <div className="flex flex-col min-h-full bg-background">
+        <Navbar/>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -604,6 +608,7 @@ export function CoursePathwayPage({
   if (error) {
     return (
       <div className="flex flex-col min-h-full bg-background">
+        <Navbar/>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-3" />
@@ -622,6 +627,7 @@ export function CoursePathwayPage({
 
   return (
     <div className="flex flex-col min-h-full bg-background">
+      <Navbar/>
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-6">
 
         {/* Back */}
