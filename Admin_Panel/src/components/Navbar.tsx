@@ -11,7 +11,7 @@ export function Navbar({ hasUnsavedChanges = false }: NavbarProps) {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-brand">
-        EduLearn Admin
+        StudyPoint Admin
       </Link>
       <div className="navbar-links">
         {hasUnsavedChanges && (

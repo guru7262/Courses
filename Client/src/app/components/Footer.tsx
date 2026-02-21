@@ -4,7 +4,7 @@ export function Footer() {
       <div className="px-4 py-6 md:px-6">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-sm text-muted-foreground">
-            © 2026 EduLearn. All rights reserved.
+            © 2026 StudyPoint. All rights reserved.
           </p>
 
           <div className="flex gap-6">
