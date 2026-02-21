@@ -40,7 +40,7 @@ export function EditContentPage() {
   const fetchSubject = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/categories/subject/${subjectId}`);
+      const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/subject/${subjectId}`);
       if (!response.ok) throw new Error('Failed to fetch subject');
       const data = await response.json();
       setSubject(data);
@@ -306,7 +306,7 @@ export function EditContentPage() {
 
     try {
       setSaving(true);
-      const response = await fetch(`${API_BASE_URL}/categories/subject/${subjectId}`, {
+      const response = await fetch(`${API_BASE_URL}/categories/${categoryId}/subject/${subjectId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subject)

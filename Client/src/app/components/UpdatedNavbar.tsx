@@ -165,7 +165,7 @@ export function Navbar({ onMenuClick, showMenuButton = false }: NavbarProps) {
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
-            EduLearn
+            StudyPoint
           </Link>
         </div>
 

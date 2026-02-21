@@ -8,7 +8,7 @@ const app = express();
 
 // CORS configuration - IMPORTANT for authentication to work
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000', // Your frontend URL
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5000', // Your frontend URL
   credentials: true // Required for cookies
 }));
 

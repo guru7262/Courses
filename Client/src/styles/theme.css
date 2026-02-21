@@ -228,21 +228,21 @@
     border: 1px solid var(--border);
 }
 
-/* The "Light" follow effect */
+
 .glow-card::before {
     content: '';
     position: absolute;
     top: var(--y, -1000px);
     left: var(--x, -1000px);
     transform: translate(-50%, -50%);
-    /* Big soft glow using the --clr variable */
+   
     background: radial-gradient(var(--clr), transparent, transparent);
     width: 600px;
     height: 600px;
     opacity: 0;
     transition: 0.5s, top 0s, left 0s;
     z-index: 0;
-}
+} 
 
 .glow-card:hover::before {
     opacity: 1;
@@ -251,7 +251,7 @@
 .glow-card::after {
     content: '';
     position: absolute;
-    inset: 2px; /* This determines the border thickness */
+    inset: 2px;
     background:var(--card-bg);
     opacity: 0.8;
     border-radius: 16px;
