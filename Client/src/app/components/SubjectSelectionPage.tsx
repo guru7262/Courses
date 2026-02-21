@@ -120,16 +120,16 @@ useEffect(() => {
                     className="glow-card group relative overflow-hidden rounded-lg border border-border bg-card p-6 text-left shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <div className="relative z-10 pointer-events-none">
-                      
+
   <div className="icon-wrapper">
     <img src={subject.icon} alt={subject.name} className="subject-icon" />
   </div>
 
-                      <h3 className="text-xl font-medium text-foreground mb-2">
+                      <h3 className="text-xl font-medium text-foreground mb-1 pt-2">
                         {subject.name}
                       </h3>
 
-                      <p className="text-muted-foreground text-sm mb-4">
+                      <p className="text-muted-foreground text-sm mb-2">
                         {subject.description}
                       </p>
 
