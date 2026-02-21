@@ -12,10 +12,10 @@ import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { NotificationBanner } from "@/app/components/notifications/NotificationBanner";
 import { NotificationsPage } from "@/app/components/notifications/NotificationsPage";
 import { ProfileDashboard } from './pages/profile/ProfileDashboard';
-   import { EditProfile } from './pages/profile/EditProfile';
-   import { CoursePathwayPage } from './pages/CoursePathwayPage';
-   // …
-  
+import { EditProfile } from './pages/profile/EditProfile';
+import { CoursePathwayPage } from './pages/CoursePathwayPage';
+// …
+
 // Auth components
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -43,17 +43,17 @@ function SubjectsPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const url = `${API_BASE_URL}/categories`;
       console.log("Fetching from:", url);
-      
+
       const response = await fetch(url);
       console.log("Response received:", response.status);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log("✅ Categories loaded:", data);
       setCategories(data);
@@ -68,10 +68,10 @@ function SubjectsPage() {
 
   const handleSelectSubject = (subjectId: string) => {
     console.log("📌 Subject selected:", subjectId);
-    
+
     // Check if user clicked Notes/Videos/Mock Tests in navbar
     const selectedContentType = localStorage.getItem('selectedContentType');
-    
+
     if (selectedContentType) {
       console.log("🎯 Content type selected:", selectedContentType);
       // Navigate with the tab parameter
@@ -91,7 +91,7 @@ function SubjectsPage() {
           <p className="font-bold">Error</p>
           <p>{error}</p>
           <p className="text-sm mt-2">Check console (F12) for details</p>
-          <button 
+          <button
             onClick={() => {
               console.log("🔄 Retry clicked");
               fetchCategories();
@@ -132,20 +132,20 @@ function SubjectDetailPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const url = `${API_BASE_URL}/categories/subject/${id}`;
       console.log("Fetching from:", url);
-      
+
       const response = await fetch(url);
       console.log("Response received:", response.status);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log("✅ Content loaded:", data);
-      
+
       // Data is now in the correct format - no transformation needed
       setSubjectContent(data);
     } catch (err) {
@@ -174,7 +174,7 @@ function SubjectDetailPage() {
           <p className="font-bold">Error</p>
           <p>{error}</p>
           <p className="text-sm mt-2">Check console (F12) for details</p>
-          <button 
+          <button
             onClick={() => {
               console.log("🔄 Retry clicked");
               if (subjectId) fetchSubjectContent(subjectId);
@@ -216,45 +216,49 @@ export default function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
 
               {/* Protected Routes */}
-              <Route 
-                path="/" 
+              <Route
+                path="/"
                 element={
-                    <>
-                      <Navbar showMenuButton={false} />
-                      <NotificationBanner apiUrl={API_BASE_URL} />
-                      <div className="flex-1 overflow-y-auto">
-                        <SubjectsPage />
-                      </div>
-                    </>
-                  
-                } 
+                  <>
+                    <Navbar showMenuButton={false} />
+                    <NotificationBanner apiUrl={API_BASE_URL} />
+                    <div className="flex-1 overflow-y-auto">
+                      <SubjectsPage />
+                    </div>
+                  </>
+
+                }
               />
-              
-              <Route 
-                path="/subject/:subjectId" 
+
+              <Route
+                path="/subject/:subjectId"
                 element={
-                
-                    <SubjectDetailPage />
-                  
-                } 
+
+                  <SubjectDetailPage />
+
+                }
               />
-              
-              <Route 
-                path="/notifications" 
+
+              <Route
+                path="/notifications"
                 element={
-                  
-                    <>
-                      <Navbar showMenuButton={false} />
-                      <div className="flex-1 overflow-y-auto">
-                        <NotificationsPage apiUrl={API_BASE_URL} />
-                      </div>
-                    </>
-                  
-                } 
+
+                  <>
+                    <Navbar showMenuButton={false} />
+                    <div className="flex-1 overflow-y-auto">
+                      <NotificationsPage apiUrl={API_BASE_URL} />
+                    </div>
+                  </>
+
+                }
               />
-               <Route path="/profile" element={<ProfileDashboard />} />
-   <Route path="/profile/edit" element={<EditProfile />} />
-    <Route path="/pathway" element={<CoursePathwayPage />} />
+              <Route path="/profile" element={<ProfileDashboard />} />
+              <Route path="/profile/edit" element={<EditProfile />} />
+              <Route path="/pathway" element={
+                <div className="flex-1 overflow-y-auto">
+                  <CoursePathwayPage />
+                </div>
+              } />
             </Routes>
           </div>
         </BrowserRouter>
