@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { X, Menu, ChevronRight, BookOpen, Video, ClipboardList, Link as LinkIcon, HelpCircle } from "lucide-react";
+import { X, Menu, ChevronRight, BookOpen, Video, ClipboardList, Link as LinkIcon, HelpCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Footer } from "@/app/components/Footer";
@@ -69,10 +69,80 @@ export function SubjectContentPage({
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [expandedSubTopics, setExpandedSubTopics] = useState<string[]>([]);
+  const [completedTopics, setCompletedTopics] = useState<string[]>([]);
 
   // Get current content type's subtopics
   const currentContentType = subjectContent?.contentTypes?.find(ct => ct.id === activeContentType);
   const currentSubTopics = currentContentType?.subTopics || [];
+
+  // --- Progress tracking (localStorage) ---
+  const progressKey = `progress_${subjectContent?.id}_${activeContentType}`;
+
+  // Load completed topics from localStorage
+  useEffect(() => {
+    if (!subjectContent?.id || !activeContentType) return;
+    try {
+      const saved = localStorage.getItem(progressKey);
+      if (saved) setCompletedTopics(JSON.parse(saved));
+      else setCompletedTopics([]);
+    } catch { setCompletedTopics([]); }
+  }, [progressKey, subjectContent?.id, activeContentType]);
+
+  // Flatten subtopic tree into ordered list of leaf nodes (topics with content)
+  const flattenTopics = (topics: SubTopic[]): SubTopic[] => {
+    const result: SubTopic[] = [];
+    for (const topic of topics) {
+      if (topic.content) result.push(topic);
+      if (topic.subTopics) result.push(...flattenTopics(topic.subTopics));
+    }
+    return result;
+  };
+
+  const flatList = flattenTopics(currentSubTopics);
+  const currentIndex = flatList.findIndex(t => t.id === activeSubTopic);
+  const nextTopic = currentIndex >= 0 && currentIndex < flatList.length - 1 ? flatList[currentIndex + 1] : null;
+
+  const markCompletedAndNext = () => {
+    if (!activeSubTopic) return;
+    const updated = completedTopics.includes(activeSubTopic)
+      ? completedTopics
+      : [...completedTopics, activeSubTopic];
+    setCompletedTopics(updated);
+    try { localStorage.setItem(progressKey, JSON.stringify(updated)); } catch { }
+    if (nextTopic) {
+      setActiveSubTopic(nextTopic.id);
+      // Auto-expand parent chain so the next topic is visible
+      const parentsToExpand = findParentChain(currentSubTopics, nextTopic.id);
+      if (parentsToExpand.length > 0) {
+        setExpandedSubTopics(prev => {
+          const newSet = new Set([...prev, ...parentsToExpand]);
+          return Array.from(newSet);
+        });
+      }
+    }
+  };
+
+  // Find all parent IDs for a given topic ID
+  const findParentChain = (topics: SubTopic[], targetId: string, chain: string[] = []): string[] => {
+    for (const topic of topics) {
+      if (topic.id === targetId) return chain;
+      if (topic.subTopics) {
+        const found = findParentChain(topic.subTopics, targetId, [...chain, topic.id]);
+        if (found.length > 0) return found;
+      }
+    }
+    return [];
+  };
+
+  // Check if a topic is completed
+  const isTopicCompleted = (topicId: string): boolean => completedTopics.includes(topicId);
+
+  // Check if all leaf descendants of a parent topic are completed
+  const areAllChildrenCompleted = (topic: SubTopic): boolean => {
+    const leaves = flattenTopics(topic.subTopics || []);
+    if (leaves.length === 0) return isTopicCompleted(topic.id);
+    return leaves.every(leaf => completedTopics.includes(leaf.id));
+  };
 
   const [pathway, setPathway] = useState(null);
   const [pathwayLoading, setPathwayLoading] = useState(true);
@@ -231,56 +301,64 @@ export function SubjectContentPage({
   };
 
   const renderSubTopics = (topics: SubTopic[] = [], level: number = 0) => {
-    return topics.map((subTopic) => (
-      <div key={subTopic.id}>
-        <div
-          className={`
-            w-full rounded-lg px-4 py-3 text-left text-sm transition-colors mb-1 flex items-center justify-between
-            ${activeSubTopic === subTopic.id
-              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
-            }
-          `}
-          style={{ paddingLeft: `${16 + level * 16}px` }}
-        >
-          <span
-            className="flex-1 cursor-pointer"
-            onClick={() => {
-              setActiveSubTopic(subTopic.id);
-              setRightSidebarOpen(false);
-              // Also expand if it has subtopics
-              if (subTopic.subTopics && subTopic.subTopics.length > 0) {
-                toggleSubTopicExpansion(subTopic.id);
+    return topics.map((subTopic) => {
+      const hasChildren = subTopic.subTopics && subTopic.subTopics.length > 0;
+      const completed = hasChildren
+        ? areAllChildrenCompleted(subTopic)
+        : isTopicCompleted(subTopic.id);
+
+      return (
+        <div key={subTopic.id}>
+          <div
+            className={`
+              w-full rounded-lg px-4 py-3 text-left text-sm transition-colors mb-1 flex items-center justify-between
+              ${activeSubTopic === subTopic.id
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
               }
-            }}
+            `}
+            style={{ paddingLeft: `${16 + level * 16}px` }}
           >
-            {subTopic.name}
-          </span>
-          {subTopic.subTopics && subTopic.subTopics.length > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleSubTopicExpansion(subTopic.id);
+            {completed && (
+              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mr-2" />
+            )}
+            <span
+              className="flex-1 cursor-pointer"
+              onClick={() => {
+                setActiveSubTopic(subTopic.id);
+                setRightSidebarOpen(false);
+                if (hasChildren) {
+                  toggleSubTopicExpansion(subTopic.id);
+                }
               }}
-              className="flex-shrink-0 p-1 hover:bg-sidebar-accent/30 rounded transition-colors"
-              aria-label={expandedSubTopics.includes(subTopic.id) ? "Collapse" : "Expand"}
             >
-              <ChevronRight
-                className={`h-4 w-4 transition-transform ${expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
-                  }`}
-              />
-            </button>
-          )}
+              {subTopic.name}
+            </span>
+            {hasChildren && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSubTopicExpansion(subTopic.id);
+                }}
+                className="flex-shrink-0 p-1 hover:bg-sidebar-accent/30 rounded transition-colors"
+                aria-label={expandedSubTopics.includes(subTopic.id) ? "Collapse" : "Expand"}
+              >
+                <ChevronRight
+                  className={`h-4 w-4 transition-transform ${expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
+                    }`}
+                />
+              </button>
+            )}
+          </div>
+          {hasChildren &&
+            expandedSubTopics.includes(subTopic.id) && (
+              <div className="ml-2">
+                {renderSubTopics(subTopic.subTopics!, level + 1)}
+              </div>
+            )}
         </div>
-        {subTopic.subTopics &&
-          subTopic.subTopics.length > 0 &&
-          expandedSubTopics.includes(subTopic.id) && (
-            <div className="ml-2">
-              {renderSubTopics(subTopic.subTopics, level + 1)}
-            </div>
-          )}
-      </div>
-    ));
+      );
+    });
   };
 
   const renderPlainText = (data: any) => {
@@ -544,6 +622,37 @@ export function SubjectContentPage({
               {activeSubTopicData?.name || "Select a Topic"}
             </h2>
             {renderContent()}
+
+            {/* Next Button */}
+            {activeSubTopicData?.content && (
+              <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {isTopicCompleted(activeSubTopic) && (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>Completed</span>
+                    </>
+                  )}
+                </div>
+                <Button
+                  onClick={markCompletedAndNext}
+                  className="gap-2"
+                  size="lg"
+                >
+                  {nextTopic ? (
+                    <>
+                      Next: {nextTopic.name}
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      {isTopicCompleted(activeSubTopic) ? 'All Done!' : 'Mark Complete'}
+                      <CheckCircle2 className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </main>
 
