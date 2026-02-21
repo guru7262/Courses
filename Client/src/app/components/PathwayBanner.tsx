@@ -263,7 +263,7 @@ export function PathwayBanner({
         {/* Streak pill */}
         {pathway.currentStepIndex > 0 && (
           <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 text-xs font-medium flex-shrink-0">
-            <Flame className="h-3 w-3" />
+
             <span>Step {pathway.currentStepIndex + 1}/{pathway.totalSteps}</span>
           </div>
         )}

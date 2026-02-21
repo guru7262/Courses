@@ -45,16 +45,8 @@ interface SubjectContentPageProps {
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const getContentTypeIcon = (type: string) => {
-  switch (type) {
-    case 'notes': return <BookOpen className="h-5 w-5" />;
-    case 'videos': return <Video className="h-5 w-5" />;
-    case 'links': return <LinkIcon className="h-5 w-5" />;
-    case 'mockTests': return <ClipboardList className="h-5 w-5" />;
-    case 'mcqs': return <HelpCircle className="h-5 w-5" />;
-    default: return <BookOpen className="h-5 w-5" />;
-  }
+  return null;
 };
-
 export function SubjectContentPage({
   subjectContent,
   loading = false,

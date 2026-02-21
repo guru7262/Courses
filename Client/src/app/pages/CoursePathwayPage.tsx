@@ -342,11 +342,7 @@ function StepCard({ step, isCurrent, isLastStep, onNavigate, onCompleteStep }: S
                       <span className="text-xs font-semibold text-primary uppercase tracking-wide">
                         {block.subjectName}
                       </span>
-                      {block.depth > 0 && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {'›'.repeat(block.depth)} depth {block.depth}
-                        </span>
-                      )}
+          
                       {blockDone && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                     </div>
 
@@ -471,12 +467,12 @@ function StepCard({ step, isCurrent, isLastStep, onNavigate, onCompleteStep }: S
               disabled={completing}
               className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
             >
-              <CheckCircle2 className="h-4 w-4" />
+             
               {completing
                 ? 'Unlocking…'
                 : isLastStep
-                  ? 'Complete Pathway 🎉'
-                  : 'Complete Step & Unlock Next'
+                  ? 'Complete Pathway '
+                  : 'Unlock Next Step'
               }
             </button>
           )}
