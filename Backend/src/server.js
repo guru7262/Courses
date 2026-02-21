@@ -8,8 +8,8 @@ const app = express();
 
 // CORS configuration - IMPORTANT for authentication to work
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5000', // Your frontend URL
-  credentials: true // Required for cookies
+    origin: ['http://localhost:3001', 'http://localhost:5500'],
+  credentials: true
 }));
 
 // Middleware

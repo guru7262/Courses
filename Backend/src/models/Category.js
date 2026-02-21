@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const ContentDataSchema = new mongoose.Schema({
   type: {
     type: String,
+    default: null
   },
   data: {
     type: mongoose.Schema.Types.Mixed, // Flexible data structure

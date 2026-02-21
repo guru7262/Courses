@@ -47,6 +47,95 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const getContentTypeIcon = (type: string) => {
   return null;
 };
+
+// Interactive MCQ renderer component
+function McqRenderer({ questions }: { questions: { question: string; options: string[]; answer: string; explanation: string }[] }) {
+  const [selected, setSelected] = useState<(string | null)[]>(Array(questions.length).fill(null));
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSelect = (qIdx: number, letter: string) => {
+    if (submitted) return;
+    setSelected(prev => { const n = [...prev]; n[qIdx] = letter; return n; });
+  };
+
+  const score = questions.filter((q, i) => selected[i] === q.answer).length;
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+
+  const reset = () => {
+    setSelected(Array(questions.length).fill(null));
+    setSubmitted(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Score bar shown after submit */}
+      {submitted && (
+        <div className="bg-card border border-border rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-lg">Score: {score} / {questions.length}</p>
+            <p className="text-sm text-muted-foreground">
+            </p>
+          </div>
+          <button onClick={reset} className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent transition">
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {questions.map((q, qIdx) => {
+        const sel = selected[qIdx];
+        const correct = q.answer;
+        return (
+          <div key={qIdx} className="bg-card border border-border rounded-lg p-5 shadow-sm">
+            <p className="font-medium mb-4">Q{qIdx + 1}. {q.question}</p>
+            <div className="space-y-2">
+              {q.options.map((opt, oIdx) => {
+                const letter = letters[oIdx];
+                const isSelected = sel === letter;
+                const isCorrect = letter === correct;
+                let optClass = 'flex items-center gap-3 w-full px-4 py-3 rounded-lg border text-sm text-left transition-colors ';
+                if (!submitted) {
+                  optClass += isSelected
+                    ? 'border-primary bg-primary/10 text-foreground'
+                    : 'border-border hover:bg-accent text-foreground cursor-pointer';
+                } else {
+                  if (isCorrect) optClass += 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400';
+                  else if (isSelected && !isCorrect) optClass += 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400';
+                  else optClass += 'border-border text-muted-foreground';
+                }
+                return (
+                  <button key={oIdx} className={optClass} onClick={() => handleSelect(qIdx, letter)} disabled={submitted}>
+                    <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {letter}
+                    </span>
+                    {opt}
+                    {submitted && isCorrect && <CheckCircle2 className="ml-auto h-4 w-4 text-green-500 flex-shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+            {submitted && q.explanation && (
+              <p className="mt-3 text-sm text-muted-foreground bg-muted rounded-lg px-4 py-2">
+                 {q.explanation}
+              </p>
+            )}
+          </div>
+        );
+      })}
+
+      {!submitted && (
+        <button
+          onClick={() => setSubmitted(true)}
+          disabled={selected.some(s => s === null)}
+          className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Submit Answers
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function SubjectContentPage({
   subjectContent,
   loading = false,
@@ -370,6 +459,50 @@ export function SubjectContentPage({
     );
   };
 
+  // Parse plain text MCQ format into structured questions
+  // Format:
+  // Q: Question text
+  // A) Option one
+  // B) Option two
+  // C) Option three
+  // D) Option four
+  // ANS: A
+  // EXP: Optional explanation
+  const parseMcqText = (text: string) => {
+    const questions: { question: string; options: string[]; answer: string; explanation: string }[] = [];
+    const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
+
+    for (const block of blocks) {
+      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+      let question = '';
+      const options: string[] = [];
+      let answer = '';
+      let explanation = '';
+
+      for (const line of lines) {
+        if (line.match(/^Q[:.)]\s*/i)) {
+          question = line.replace(/^Q[:.)]\s*/i, '').trim();
+        } else if (line.match(/^[A-D][.)]\s/)) {
+          options.push(line.replace(/^[A-D][.)]\s/, '').trim());
+        } else if (line.match(/^ANS[:.)]\s*/i)) {
+          answer = line.replace(/^ANS[:.)]\s*/i, '').trim().toUpperCase();
+        } else if (line.match(/^EXP[:.)]\s*/i)) {
+          explanation = line.replace(/^EXP[:.)]\s*/i, '').trim();
+        }
+      }
+
+      if (question && options.length > 0) {
+        questions.push({ question, options, answer, explanation });
+      }
+    }
+
+    return questions;
+  };
+
+  const renderMcqs = (questions: { question: string; options: string[]; answer: string; explanation: string }[]) => {
+    return <McqRenderer questions={questions} key={activeSubTopic} />;
+  };
+
   const renderContent = () => {
     if (!activeSubTopicData?.content) {
       return (
@@ -381,12 +514,21 @@ export function SubjectContentPage({
 
     const { type, data } = activeSubTopicData.content;
 
-    // If type is missing/empty, or data is a plain string, render as plain text notes
-    if (!type || type === '') {
+    // Fallback: if content.type is missing/null in DB, infer from the active tab's type
+    const resolvedType = type || currentContentType?.type || '';
+
+    // If data is a plain string and looks like MCQ format, parse and render it
+    if (typeof data === 'string' && data.match(/^Q[:.)]/im)) {
+      const questions = parseMcqText(data);
+      if (questions.length > 0) return renderMcqs(questions);
+    }
+
+    // If still no type, render as plain text
+    if (!resolvedType || resolvedType === '') {
       return renderPlainText(data);
     }
 
-    switch (type) {
+    switch (resolvedType) {
       case 'notes':
         return renderPlainText(data);
 
@@ -444,61 +586,32 @@ export function SubjectContentPage({
         );
 
       case 'mockTests':
+      case 'mcqs': {
+        // If data is a plain string, try to parse as MCQ text format
+        if (typeof data === 'string') {
+          const questions = parseMcqText(data);
+          if (questions.length > 0) return renderMcqs(questions);
+          return renderPlainText(data);
+        }
+        // If data is an array of MCQ objects
+        if (Array.isArray(data) && data.length > 0) {
+          const normalized = data.map((item: any) => ({
+            question: item.question || item.title || '',
+            options: item.options || [],
+            answer: item.answer !== undefined ? String.fromCharCode(65 + item.answer) : item.ans || '',
+            explanation: item.explanation || '',
+          }));
+          return renderMcqs(normalized);
+        }
         return (
-          <div className="space-y-4">
-            {Array.isArray(data) && data.length > 0 ? (
-              data.map((test: any, idx: number) => (
-                <div key={idx} className="bg-card text-card-foreground rounded-lg p-6 shadow-sm border border-border">
-                  <h3 className="font-semibold text-xl mb-2">{test.title}</h3>
-                  <div className="flex gap-4 text-sm text-muted-foreground mb-4">
-                    <span> {test.duration} minutes</span>
-                    <span> {test.totalMarks} marks</span>
-                    <span> {test.questions?.length || 0} questions</span>
-                  </div>
-                  <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition">
-                    Start Test
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
-                <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No mock tests available yet.</p>
-              </div>
-            )}
+          <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
+            <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No questions available yet.</p>
           </div>
         );
-
-      case 'mcqs':
-        return (
-          <div className="space-y-4">
-            {Array.isArray(data) && data.length > 0 ? (
-              data.map((mcq: any, idx: number) => (
-                <div key={idx} className="bg-card text-card-foreground rounded-lg p-4 shadow-sm border border-border">
-                  <h4 className="font-medium mb-3">Q{idx + 1}. {mcq.question}</h4>
-                  <div className="space-y-2">
-                    {mcq.options?.map((option: string, optIdx: number) => (
-                      <div key={optIdx} className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full border border-border flex items-center justify-center text-xs">
-                          {String.fromCharCode(65 + optIdx)}
-                        </div>
-                        <span className="text-sm">{option}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
-                <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No MCQs available yet.</p>
-              </div>
-            )}
-          </div>
-        );
+      }
 
       default:
-        // For any unrecognized type, render data as plain text
         return renderPlainText(data);
     }
   };
