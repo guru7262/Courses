@@ -9,7 +9,7 @@ interface SubTopic {
   id: string;
   name: string;
   content?: {
-    type: 'notes' | 'videos' | 'links' | 'mockTests' | 'mcqs' | string;
+    type?: 'notes' | 'videos' | 'links' | 'mockTests' | 'mcqs' | string;
     data: any;
   };
   subTopics?: SubTopic[];
@@ -65,7 +65,7 @@ export function SubjectContentPage({
     subjectContent?.contentTypes?.[0]?.id || ""
   );
   const [activeSubTopic, setActiveSubTopic] = useState("");
-  
+
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [expandedSubTopics, setExpandedSubTopics] = useState<string[]>([]);
@@ -74,8 +74,8 @@ export function SubjectContentPage({
   const currentContentType = subjectContent?.contentTypes?.find(ct => ct.id === activeContentType);
   const currentSubTopics = currentContentType?.subTopics || [];
 
-const [pathway, setPathway] = useState(null);
-   const [pathwayLoading, setPathwayLoading] = useState(true);
+  const [pathway, setPathway] = useState(null);
+  const [pathwayLoading, setPathwayLoading] = useState(true);
 
   // Sync state if subjectContent loads after initial render
   useEffect(() => {
@@ -86,16 +86,16 @@ const [pathway, setPathway] = useState(null);
     }
   }, [subjectContent, searchParams, activeContentType]);
 
-useEffect(() => {
-     const token = localStorage.getItem('token');
-     if (!token) { setPathwayLoading(false); return; }
-     fetch(`${API_BASE_URL}/pathway`, {
-       headers: { Authorization: `Bearer ${token}` }
-     })
-       .then(r => r.ok ? r.json() : null)
-       .then(d => setPathway(d?.pathway ?? null))
-       .finally(() => setPathwayLoading(false));
-   }, []);
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) { setPathwayLoading(false); return; }
+    fetch(`${API_BASE_URL}/pathway`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPathway(d?.pathway ?? null))
+      .finally(() => setPathwayLoading(false));
+  }, []);
 
 
   // Set first subtopic when content type changes
@@ -103,15 +103,15 @@ useEffect(() => {
     if (currentSubTopics.length > 0) {
       // Try to find matching topic in new content type based on current selection
       const currentTopic = activeSubTopic ? findSubTopic(currentSubTopics, activeSubTopic) : null;
-      
+
       if (currentTopic) {
         // Already in the right topic, do nothing
         return;
       }
-      
+
       // Try to match by hierarchy: look for same name in current path
       const matchedTopic = findMatchingTopicByName(currentSubTopics, activeSubTopic);
-      
+
       if (matchedTopic) {
         setActiveSubTopic(matchedTopic.id);
       } else {
@@ -141,23 +141,23 @@ useEffect(() => {
   };
 
 
-  
+
   // Helper to find matching topic by hierarchy path
   const findMatchingTopicByName = (topics: SubTopic[], currentTopicId: string): SubTopic | null => {
     // First, try to find the exact same topic by name in the previous content type
-    const previousContentType = subjectContent?.contentTypes?.find(ct => 
+    const previousContentType = subjectContent?.contentTypes?.find(ct =>
       ct.subTopics.some(st => findSubTopic([st], currentTopicId))
     );
-    
+
     if (!previousContentType) return null;
-    
+
     const previousTopic = findSubTopic(previousContentType.subTopics, currentTopicId);
     if (!previousTopic) return null;
-    
+
     // Build path of names from root to current topic
     const path = buildTopicPath(previousContentType.subTopics, currentTopicId);
     if (path.length === 0) return null;
-    
+
     // Try to match the deepest level first, then work up
     for (let i = path.length - 1; i >= 0; i--) {
       const matchedTopic = findTopicByNamePath(topics, path.slice(0, i + 1));
@@ -175,10 +175,10 @@ useEffect(() => {
         return matchedTopic;
       }
     }
-    
+
     return null;
   };
-  
+
   // Build path of topic names from root to target
   const buildTopicPath = (topics: SubTopic[], targetId: string, currentPath: string[] = []): string[] => {
     for (const topic of topics) {
@@ -193,18 +193,18 @@ useEffect(() => {
     }
     return [];
   };
-  
+
   // Find topic by matching path of names
   const findTopicByNamePath = (topics: SubTopic[], namePath: string[]): SubTopic | null => {
     if (namePath.length === 0) return null;
-    
+
     const [firstName, ...restPath] = namePath;
     const topic = topics.find(t => t.name === firstName);
-    
+
     if (!topic) return null;
     if (restPath.length === 0) return topic;
     if (!topic.subTopics) return null;
-    
+
     return findTopicByNamePath(topic.subTopics, restPath);
   };
 
@@ -243,7 +243,7 @@ useEffect(() => {
           `}
           style={{ paddingLeft: `${16 + level * 16}px` }}
         >
-          <span 
+          <span
             className="flex-1 cursor-pointer"
             onClick={() => {
               setActiveSubTopic(subTopic.id);
@@ -266,22 +266,38 @@ useEffect(() => {
               aria-label={expandedSubTopics.includes(subTopic.id) ? "Collapse" : "Expand"}
             >
               <ChevronRight
-                className={`h-4 w-4 transition-transform ${
-                  expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
-                }`}
+                className={`h-4 w-4 transition-transform ${expandedSubTopics.includes(subTopic.id) ? 'rotate-90' : ''
+                  }`}
               />
             </button>
           )}
         </div>
-        {subTopic.subTopics && 
-         subTopic.subTopics.length > 0 && 
-         expandedSubTopics.includes(subTopic.id) && (
-          <div className="ml-2">
-            {renderSubTopics(subTopic.subTopics, level + 1)}
-          </div>
-        )}
+        {subTopic.subTopics &&
+          subTopic.subTopics.length > 0 &&
+          expandedSubTopics.includes(subTopic.id) && (
+            <div className="ml-2">
+              {renderSubTopics(subTopic.subTopics, level + 1)}
+            </div>
+          )}
       </div>
     ));
+  };
+
+  const renderPlainText = (data: any) => {
+    const text = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    return (
+      <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+        <div className="bg-card text-card-foreground rounded-lg p-4 md:p-6 shadow-sm border border-border">
+          {text.split("\n").map((paragraph: string, idx: number) =>
+            paragraph.trim() ? (
+              <p key={idx} className="mb-4 leading-relaxed">
+                {paragraph}
+              </p>
+            ) : null
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -295,21 +311,14 @@ useEffect(() => {
 
     const { type, data } = activeSubTopicData.content;
 
+    // If type is missing/empty, or data is a plain string, render as plain text notes
+    if (!type || type === '') {
+      return renderPlainText(data);
+    }
+
     switch (type) {
       case 'notes':
-        return (
-          <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
-            <div className="bg-card text-card-foreground rounded-lg p-4 md:p-6 shadow-sm border border-border">
-              {typeof data === 'string' && data.split("\n").map((paragraph, idx) =>
-                paragraph.trim() ? (
-                  <p key={idx} className="mb-4 leading-relaxed">
-                    {paragraph}
-                  </p>
-                ) : null
-              )}
-            </div>
-          </div>
-        );
+        return renderPlainText(data);
 
       case 'videos':
         return (
@@ -419,11 +428,8 @@ useEffect(() => {
         );
 
       default:
-        return (
-          <div className="bg-card text-card-foreground rounded-lg p-8 shadow-sm border border-border text-center">
-            <p className="text-muted-foreground">Unsupported content type: {type}</p>
-          </div>
-        );
+        // For any unrecognized type, render data as plain text
+        return renderPlainText(data);
     }
   };
 
@@ -465,16 +471,16 @@ useEffect(() => {
   }
 
   return (
-    
+
     <>
-    <PathwayBanner
-         pathway={pathway}
-         loading={pathwayLoading}
-         onViewAll={() => navigate('/pathway')}
-         onNavigate={(subjectId, topicId, contentTypeId) =>
-           navigate(`/subject/${subjectId}?topic=${topicId}${contentTypeId ? `&tab=${contentTypeId}` : ''}`)
-         }
-       />
+      <PathwayBanner
+        pathway={pathway}
+        loading={pathwayLoading}
+        onViewAll={() => navigate('/pathway')}
+        onNavigate={(subjectId, topicId, contentTypeId) =>
+          navigate(`/subject/${subjectId}?topic=${topicId}${contentTypeId ? `&tab=${contentTypeId}` : ''}`)
+        }
+      />
       <div className="flex flex-col md:flex-row relative bg-background text-foreground">
         <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background flex-shrink-0 sticky top-0 z-20">
           <Button variant="outline" size="sm" onClick={() => setLeftSidebarOpen(true)}>
