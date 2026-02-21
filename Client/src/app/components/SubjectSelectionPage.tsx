@@ -2,7 +2,9 @@ import { ArrowRight } from "lucide-react";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Footer } from "@/app/components/Footer";
 import React from 'react';
-
+import { CoursePathwayPage } from '@/app/pages/CoursePathwayPage';
+import { Navigate } from "react-router-dom";
+import { PathwayBanner } from "./PathwayBanner";
 interface Subject {
   id: string;
   name: string;
@@ -41,6 +43,7 @@ export function SubjectSelectionPage({
     card.style.setProperty('--y', `${y}px`);
   };
 
+
   if (loading) {
     return (
       <div className="bg-background p-4 md:p-8 min-h-full">
@@ -57,9 +60,11 @@ export function SubjectSelectionPage({
   }
 
   return (
+
     <div className="flex flex-col min-h-full">
-      {/* Main content area expands to fill space */}
+      
       <div className="bg-background p-4 md:p-8 flex-1">
+        
         <div className="mx-auto max-w-6xl">
           {categories.map((category) => (
             <div key={category.id} className="mb-12">

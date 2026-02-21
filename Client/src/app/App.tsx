@@ -13,6 +13,8 @@ import { NotificationBanner } from "@/app/components/notifications/NotificationB
 import { NotificationsPage } from "@/app/components/notifications/NotificationsPage";
 import { ProfileDashboard } from './pages/profile/ProfileDashboard';
    import { EditProfile } from './pages/profile/EditProfile';
+   import { CoursePathwayPage } from './pages/CoursePathwayPage';
+   // …
   
 // Auth components
 import { AuthProvider } from "./context/AuthContext";
@@ -252,6 +254,7 @@ export default function App() {
               />
                <Route path="/profile" element={<ProfileDashboard />} />
    <Route path="/profile/edit" element={<EditProfile />} />
+    <Route path="/pathway" element={<CoursePathwayPage />} />
             </Routes>
           </div>
         </BrowserRouter>

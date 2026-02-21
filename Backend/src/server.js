@@ -31,6 +31,9 @@ const profileRoutes = require('./auth/routes/profileRoutes');
 const authRoutes = require('./auth/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+const pathwayRoutes = require('./auth/routes/pathwayRoutes');
+   app.use('/api/pathway', pathwayRoutes);
+
 // Import your existing routes
 const categoriesRouter = require('./routes/categories');
 const notificationsRouter = require('./routes/notifications');

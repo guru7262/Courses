@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { X, Menu, ChevronRight, BookOpen, Video, ClipboardList, Link as LinkIcon, HelpCircle } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Footer } from "@/app/components/Footer";
-
+import { PathwayBanner } from '@/app/components/PathwayBanner';
 interface SubTopic {
   id: string;
   name: string;
@@ -72,6 +72,9 @@ export function SubjectContentPage({
   const currentContentType = subjectContent?.contentTypes?.find(ct => ct.id === activeContentType);
   const currentSubTopics = currentContentType?.subTopics || [];
 
+const [pathway, setPathway] = useState(null);
+   const [pathwayLoading, setPathwayLoading] = useState(true);
+
   // Sync state if subjectContent loads after initial render
   useEffect(() => {
     if (subjectContent?.contentTypes?.length > 0 && !activeContentType) {
@@ -80,6 +83,18 @@ export function SubjectContentPage({
       setActiveContentType(contentType ? (tabFromUrl as string) : subjectContent.contentTypes[0].id);
     }
   }, [subjectContent, searchParams, activeContentType]);
+
+useEffect(() => {
+     const token = localStorage.getItem('token');
+     if (!token) { setPathwayLoading(false); return; }
+     fetch(`${API_BASE_URL}/pathway`, {
+       headers: { Authorization: `Bearer ${token}` }
+     })
+       .then(r => r.ok ? r.json() : null)
+       .then(d => setPathway(d?.pathway ?? null))
+       .finally(() => setPathwayLoading(false));
+   }, []);
+
 
   // Set first subtopic when content type changes
   useEffect(() => {
@@ -446,7 +461,16 @@ export function SubjectContentPage({
   }
 
   return (
+    
     <>
+    <PathwayBanner
+         pathway={pathway}
+         loading={pathwayLoading}
+         onViewAll={() => Navigate('/pathway')}
+         onNavigate={(subjectId, topicId, contentTypeId) =>
+           Navigate(`/subject/${subjectId}?topic=${topicId}${contentTypeId ? `&tab=${contentTypeId}` : ''}`)
+         }
+       />
       <div className="flex flex-col md:flex-row relative bg-background text-foreground">
         <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background flex-shrink-0 sticky top-0 z-20">
           <Button variant="outline" size="sm" onClick={() => setLeftSidebarOpen(true)}>
