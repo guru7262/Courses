@@ -44,20 +44,21 @@ function flattenSubTopics(subTopics, breadcrumb = [], depth = 0) {
     const currentBreadcrumb = [...breadcrumb, st.name];
     const children = st.subTopics || [];
 
-    result.push({
-      id: st.id,
-      name: st.name,
-      breadcrumb: currentBreadcrumb,
-      depth,
-      hasChildren: children.length > 0,
-      childIds: children.map(c => c.id),
-      // Keep the raw children tree so the frontend can deep-link into any node
-      subTopics: children
-    });
-
-    // Recurse into children
+    // If it has children, recurse into them.
+    // We do NOT push branch nodes to the pathway, only leaf nodes.
+    // This ensures every individual subtopic gets its own 1:1 step and mock test.
     if (children.length > 0) {
       result.push(...flattenSubTopics(children, currentBreadcrumb, depth + 1));
+    } else {
+      result.push({
+        id: st.id,
+        name: st.name,
+        breadcrumb: currentBreadcrumb,
+        depth,
+        hasChildren: false,
+        childIds: [],
+        subTopics: []
+      });
     }
   }
   return result;
@@ -535,8 +536,13 @@ const advanceToNextStep = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No active step found.' });
     }
 
-    // No hard gates – students are free to advance at any time.
-    // The pathway is a personalised guide, not a lock.
+    // Enforce hard gates: all subjects must be studied and all mock tests completed
+    const allStudied = currentStep.subjectBlocks.every(b => b.studyStatus === 'completed');
+    const allMocksDone = currentStep.subjectBlocks.every(b => b.mockTest.status === 'completed' || b.mockTest.status === 'skipped');
+
+    if (!allStudied || !allMocksDone) {
+      return res.status(400).json({ success: false, message: 'You must complete all topics and mock tests in this step before advancing.' });
+    }
 
     // Mark current step complete
     currentStep.status = 'completed';
