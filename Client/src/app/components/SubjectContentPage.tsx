@@ -49,7 +49,13 @@ const getContentTypeIcon = (type: string) => {
 };
 
 // Interactive MCQ renderer component
-function McqRenderer({ questions }: { questions: { question: string; options: string[]; answer: string; explanation: string }[] }) {
+function McqRenderer({
+  questions,
+  onSubmitResult
+}: {
+  questions: { question: string; options: string[]; answer: string; explanation: string; topicId?: string }[],
+  onSubmitResult?: (score: number, total: number, wrongTopicIds: string[]) => void
+}) {
   const [selected, setSelected] = useState<(string | null)[]>(Array(questions.length).fill(null));
   const [submitted, setSubmitted] = useState(false);
 
@@ -125,7 +131,15 @@ function McqRenderer({ questions }: { questions: { question: string; options: st
 
       {!submitted && (
         <button
-          onClick={() => setSubmitted(true)}
+          onClick={() => {
+            setSubmitted(true);
+            if (onSubmitResult) {
+              const wrongTopicIds = questions
+                .map((q, i) => (selected[i] !== q.answer ? q.topicId : null))
+                .filter(Boolean) as string[];
+              onSubmitResult(score, questions.length, wrongTopicIds);
+            }
+          }}
           disabled={selected.some(s => s === null)}
           className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -211,7 +225,14 @@ export function SubjectContentPage({
     fetch(`${API_BASE_URL}/pathway`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (r.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/auth');
+          return null;
+        }
+        return r.ok ? r.json() : null;
+      })
       .then(d => {
         const pw = d?.pathway ?? null;
         setPathway(pw);
@@ -279,6 +300,11 @@ export function SubjectContentPage({
           subjectId: currentSubjectBlock.subjectId
         })
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+        return;
+      }
       if (res.ok) {
         const pwRes = await fetch(`${API_BASE_URL}/pathway`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -355,6 +381,11 @@ export function SubjectContentPage({
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+        return;
+      }
       if (res.ok) {
         // Refresh pathway
         const pwRes = await fetch(`${API_BASE_URL}/pathway`, {
@@ -609,7 +640,7 @@ export function SubjectContentPage({
   // ANS: A
   // EXP: Optional explanation
   const parseMcqText = (text: string) => {
-    const questions: { question: string; options: string[]; answer: string; explanation: string }[] = [];
+    const questions: { question: string; options: string[]; answer: string; explanation: string; topicId?: string }[] = [];
     const blocks = text.split(/\n\s*\n/).filter(b => b.trim());
 
     for (const block of blocks) {
@@ -632,15 +663,72 @@ export function SubjectContentPage({
       }
 
       if (question && options.length > 0) {
-        questions.push({ question, options, answer, explanation });
+        questions.push({ question, options, answer, explanation, topicId: activeSubTopic });
       }
     }
 
     return questions;
   };
 
-  const renderMcqs = (questions: { question: string; options: string[]; answer: string; explanation: string }[]) => {
-    return <McqRenderer questions={questions} key={activeSubTopic} />;
+  const handleMockSubmit = async (score: number, total: number, wrongTopicIds: string[]) => {
+    // If we're not inside a pathway step, we can't save to pathway
+    if (!currentPathwayStep || !currentSubjectBlock) return;
+
+    // Only process if this is the mock test content type
+    const isMockTab = activeContentTypeData?.type === 'mock' ||
+      activeContentTypeData?.name?.toLowerCase().includes('mock');
+    if (!isMockTab) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch(`${API_BASE_URL}/pathway/mock-result`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          stepNumber: currentPathwayStep.stepNumber,
+          subjectId: currentSubjectBlock.subjectId,
+          totalQuestions: total,
+          correctAnswers: score,
+          timeTakenMinutes: 5, // mock time
+          weakTopicIds: wrongTopicIds
+        })
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+
+        // Remove weak topics from completed list so user has to re-study them
+        if (wrongTopicIds.length > 0) {
+          const updatedCompleted = completedTopics.filter(id => !wrongTopicIds.includes(id));
+          setCompletedTopics(updatedCompleted);
+          try { localStorage.setItem(progressKey, JSON.stringify(updatedCompleted)); } catch { }
+        }
+
+        // Refresh pathway data locally
+        const pwRes = await fetch(`${API_BASE_URL}/pathway`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (pwRes.ok) {
+          const pwData = await pwRes.json();
+          setPathway(pwData.pathway);
+          try { localStorage.setItem('coursePathway', JSON.stringify(pwData.pathway)); } catch { }
+        }
+      }
+    } catch {
+      console.error("Failed to submit mock result");
+    }
+  };
+
+  const renderMcqs = (questions: { question: string; options: string[]; answer: string; explanation: string; topicId?: string }[]) => {
+    return <McqRenderer questions={questions} key={activeSubTopic} onSubmitResult={handleMockSubmit} />;
   };
 
   const renderContent = () => {

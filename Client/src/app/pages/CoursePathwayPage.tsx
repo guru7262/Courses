@@ -515,6 +515,11 @@ export function CoursePathwayPage({
       const res = await fetch(`${API_BASE_URL}/pathway`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setPathway(data.pathway);
@@ -564,6 +569,11 @@ export function CoursePathwayPage({
         },
         body: JSON.stringify(data)
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         setPathway(json.pathway);

@@ -18,7 +18,7 @@
  */
 
 const CoursePathway = require('../models/CoursePathway');
-const Category     = require('../../models/Category');
+const Category = require('../../models/Category');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -45,14 +45,14 @@ function flattenSubTopics(subTopics, breadcrumb = [], depth = 0) {
     const children = st.subTopics || [];
 
     result.push({
-      id:          st.id,
-      name:        st.name,
-      breadcrumb:  currentBreadcrumb,
+      id: st.id,
+      name: st.name,
+      breadcrumb: currentBreadcrumb,
       depth,
       hasChildren: children.length > 0,
-      childIds:    children.map(c => c.id),
+      childIds: children.map(c => c.id),
       // Keep the raw children tree so the frontend can deep-link into any node
-      subTopics:   children
+      subTopics: children
     });
 
     // Recurse into children
@@ -117,8 +117,8 @@ function buildSteps(category, targets) {
   // Pre-compute the flattened topic list for every subject
   const subjectFlatMaps = subjects.map(subject => {
     const primaryCT = pickPrimaryContentType(subject);
-    const mockCT    = pickMockContentType(subject);
-    const flat      = primaryCT ? flattenSubTopics(primaryCT.subTopics || []) : [];
+    const mockCT = pickMockContentType(subject);
+    const flat = primaryCT ? flattenSubTopics(primaryCT.subTopics || []) : [];
 
     return {
       subject,
@@ -144,26 +144,26 @@ function buildSteps(category, targets) {
       if (!node) continue; // this subject has fewer nodes – just skip this slot
 
       subjectBlocks.push({
-        subjectId:      subject.id,
-        subjectName:    subject.name,
+        subjectId: subject.id,
+        subjectName: subject.name,
 
         // ── The specific topic node for this step ──────────────────────────
-        topicId:        node.id,
-        topicName:      node.name,
+        topicId: node.id,
+        topicName: node.name,
 
         // Full ancestral path: ["Mechanics", "Motion", "Velocity"]
         // Lets the frontend show exactly where in the tree this node lives
-        breadcrumb:     node.breadcrumb,
+        breadcrumb: node.breadcrumb,
 
         // Depth in the tree (0 = root chapter, 1 = section, 2 = sub-section…)
-        depth:          node.depth,
+        depth: node.depth,
 
         // Whether this node itself has further children to explore
-        hasChildren:    node.hasChildren,
+        hasChildren: node.hasChildren,
 
         // The raw nested subtopic tree rooted at this node.
         // The frontend can use this to render child nodes or navigate into them.
-        subTopics:      node.subTopics,
+        subTopics: node.subTopics,
 
         // All content type IDs so the frontend can switch tabs
         contentTypeIds,
@@ -171,8 +171,8 @@ function buildSteps(category, targets) {
         studyStatus: 'pending',
         mockTest: {
           contentTypeId: mockCT ? mockCT.id : null,
-          status:        'pending',
-          result:        null
+          status: 'pending',
+          result: null
         }
       });
     }
@@ -182,16 +182,16 @@ function buildSteps(category, targets) {
     // Build a human-readable title.
     // If all blocks are at depth 0 (top-level chapters) → "Step N – Chapter N"
     // If mixed depths, use the first block's breadcrumb for context.
-    const firstBlock  = subjectBlocks[0];
-    const stepLabel   = firstBlock.breadcrumb.join(' › ');
+    const firstBlock = subjectBlocks[0];
+    const stepLabel = firstBlock.breadcrumb.join(' › ');
 
     steps.push({
       stepNumber: i + 1,
-      title:      `Step ${i + 1} – ${stepLabel}`,
-      status:     i === 0 ? 'active' : 'locked',
+      title: `Step ${i + 1} – ${stepLabel}`,
+      status: i === 0 ? 'active' : 'locked',
       unlockedAt: i === 0 ? new Date() : null,
       subjectBlocks,
-      revision:   null   // populated after mock results are submitted
+      revision: null   // populated after mock results are submitted
     });
   }
 
@@ -223,10 +223,10 @@ const initPathway = async (req, res) => {
 
     const targets = {
       categoryId,
-      categoryName:    category.name,
-      subjectsPerDay:  subjectsPerDay  || 1,
+      categoryName: category.name,
+      subjectsPerDay: subjectsPerDay || 1,
       mockTestsPerDay: mockTestsPerDay || 1,
-      hoursPerDay:     hoursPerDay     || 2
+      hoursPerDay: hoursPerDay || 2
     };
 
     const steps = buildSteps(category, targets);
@@ -238,12 +238,12 @@ const initPathway = async (req, res) => {
         userId,
         targets,
         steps,
-        currentStepIndex:       0,
-        totalSteps:             steps.length,
-        overallStatus:          steps.length > 0 ? 'in-progress' : 'not-started',
+        currentStepIndex: 0,
+        totalSteps: steps.length,
+        overallStatus: steps.length > 0 ? 'in-progress' : 'not-started',
         overallProgressPercent: 0,
-        startedAt:              new Date(),
-        completedAt:            null
+        startedAt: new Date(),
+        completedAt: null
       },
       { upsert: true, new: true, runValidators: true }
     );
@@ -287,7 +287,7 @@ const getCurrentStep = async (req, res) => {
     return res.status(200).json({
       success: true,
       currentStepIndex: pathway.currentStepIndex,
-      totalSteps:       pathway.totalSteps,
+      totalSteps: pathway.totalSteps,
       step
     });
   } catch (err) {
@@ -318,7 +318,7 @@ const markStudyDone = async (req, res) => {
     const block = step.subjectBlocks.find(b => b.subjectId === subjectId);
     if (!block) return res.status(404).json({ success: false, message: 'Subject block not found.' });
 
-    block.studyStatus      = 'completed';
+    block.studyStatus = 'completed';
     block.studyCompletedAt = new Date();
 
     await pathway.save();
@@ -363,12 +363,12 @@ const submitMockResult = async (req, res) => {
 
     block.mockTest.status = 'completed';
     block.mockTest.result = {
-      attemptedAt:      new Date(),
-      totalQuestions:   totalQuestions   || 0,
-      correctAnswers:   correctAnswers   || 0,
+      attemptedAt: new Date(),
+      totalQuestions: totalQuestions || 0,
+      correctAnswers: correctAnswers || 0,
       timeTakenMinutes: timeTakenMinutes || 0,
       scorePercent,
-      weakTopicIds:     weakTopicIds     || []
+      weakTopicIds: weakTopicIds || []
     };
 
     // ── Check if all mocks in this step are done → generate revision ──────
@@ -377,40 +377,40 @@ const submitMockResult = async (req, res) => {
     );
 
     if (allMocksDone && !step.revision) {
-      // Collect weak topics (score < 60%)
+      // Collect weak topics (score < 80%)
       const weakTopics = [];
       for (const b of step.subjectBlocks) {
         const r = b.mockTest.result;
         if (!r) continue;
-        if (r.scorePercent < 60) {
+        if (r.scorePercent < 80) {
           weakTopics.push({
-            subjectId:   b.subjectId,
+            subjectId: b.subjectId,
             subjectName: b.subjectName,
-            topicId:     b.topicId,
-            topicName:   b.topicName,
-            reason:      `Scored ${r.scorePercent}% in mock test`,
-            revisited:   false
+            topicId: b.topicId,
+            topicName: b.topicName,
+            reason: `Scored ${r.scorePercent}% in mock test`,
+            revisited: false
           });
         }
         // Also add individually flagged weak sub-topics
         for (const wId of (r.weakTopicIds || [])) {
           if (!weakTopics.find(wt => wt.topicId === wId)) {
             weakTopics.push({
-              subjectId:   b.subjectId,
+              subjectId: b.subjectId,
               subjectName: b.subjectName,
-              topicId:     wId,
-              topicName:   wId,   // frontend can resolve the name
-              reason:      'Flagged as weak in mock',
-              revisited:   false
+              topicId: wId,
+              topicName: wId,   // frontend can resolve the name
+              reason: 'Flagged as weak in mock',
+              revisited: false
             });
           }
         }
       }
 
       step.revision = {
-        generatedAt:   new Date(),
-        status:        weakTopics.length > 0 ? 'pending' : 'completed',
-        topics:        weakTopics,
+        generatedAt: new Date(),
+        status: weakTopics.length > 0 ? 'pending' : 'completed',
+        topics: weakTopics,
         revisionMock: {
           status: weakTopics.length > 0 ? 'pending' : 'skipped',
           result: null
@@ -498,12 +498,12 @@ const submitRevisionMock = async (req, res) => {
 
     step.revision.revisionMock.status = 'completed';
     step.revision.revisionMock.result = {
-      attemptedAt:      new Date(),
-      totalQuestions:   totalQuestions   || 0,
-      correctAnswers:   correctAnswers   || 0,
+      attemptedAt: new Date(),
+      totalQuestions: totalQuestions || 0,
+      correctAnswers: correctAnswers || 0,
       timeTakenMinutes: timeTakenMinutes || 0,
       scorePercent,
-      weakTopicIds:     []
+      weakTopicIds: []
     };
     step.revision.status = 'completed';
 
@@ -539,20 +539,20 @@ const advanceToNextStep = async (req, res) => {
     // The pathway is a personalised guide, not a lock.
 
     // Mark current step complete
-    currentStep.status      = 'completed';
+    currentStep.status = 'completed';
     currentStep.completedAt = new Date();
 
     const nextIndex = pathway.currentStepIndex + 1;
 
     if (nextIndex >= pathway.steps.length) {
       // All steps done!
-      pathway.overallStatus  = 'completed';
-      pathway.completedAt    = new Date();
+      pathway.overallStatus = 'completed';
+      pathway.completedAt = new Date();
       pathway.currentStepIndex = nextIndex; // points past the end
     } else {
       // Unlock next step
-      const nextStep      = pathway.steps[nextIndex];
-      nextStep.status     = 'active';
+      const nextStep = pathway.steps[nextIndex];
+      nextStep.status = 'active';
       nextStep.unlockedAt = new Date();
       pathway.currentStepIndex = nextIndex;
     }
@@ -561,10 +561,10 @@ const advanceToNextStep = async (req, res) => {
     await pathway.save();
 
     return res.status(200).json({
-      success:     true,
-      message:     nextIndex >= pathway.steps.length ? 'Pathway completed! 🎉' : 'Advanced to next step.',
+      success: true,
+      message: nextIndex >= pathway.steps.length ? 'Pathway completed! 🎉' : 'Advanced to next step.',
       currentStepIndex: pathway.currentStepIndex,
-      overallStatus:    pathway.overallStatus,
+      overallStatus: pathway.overallStatus,
       overallProgressPercent: pathway.overallProgressPercent
     });
   } catch (err) {
