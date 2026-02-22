@@ -132,6 +132,7 @@ function SubjectDetailPage() {
     try {
       setLoading(true);
       setError(null);
+      setSubjectContent(null); // Clear previous content while loading
 
       const url = `${API_BASE_URL}/categories/subject/${id}`;
       console.log("Fetching from:", url);
@@ -189,6 +190,7 @@ function SubjectDetailPage() {
       <div className="flex-1 overflow-y-auto">
         {subjectContent && (
           <SubjectContentPage
+            key={subjectId}
             subjectContent={subjectContent}
             loading={loading}
           />

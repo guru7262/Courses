@@ -116,7 +116,7 @@ function McqRenderer({ questions }: { questions: { question: string; options: st
             </div>
             {submitted && q.explanation && (
               <p className="mt-3 text-sm text-muted-foreground bg-muted rounded-lg px-4 py-2">
-                 {q.explanation}
+                {q.explanation}
               </p>
             )}
           </div>
@@ -142,9 +142,12 @@ export function SubjectContentPage({
 }: SubjectContentPageProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [activeContentType, setActiveContentType] = useState(
-    subjectContent?.contentTypes?.[0]?.id || ""
-  );
+  const tabFromUrl = searchParams.get('tab');
+  const initialTab =
+    (tabFromUrl && subjectContent?.contentTypes?.find(ct => ct.id === tabFromUrl)?.id) ||
+    subjectContent?.contentTypes?.[0]?.id || "";
+
+  const [activeContentType, setActiveContentType] = useState(initialTab);
   const [activeSubTopic, setActiveSubTopic] = useState("");
 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
@@ -169,6 +172,17 @@ export function SubjectContentPage({
     } catch { setCompletedTopics([]); }
   }, [progressKey, subjectContent?.id, activeContentType]);
 
+  const findSubTopic = (topics: SubTopic[] = [], id: string): SubTopic | null => {
+    for (const topic of topics) {
+      if (topic.id === id) return topic;
+      if (topic.subTopics) {
+        const found = findSubTopic(topic.subTopics, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   // Flatten subtopic tree into ordered list of leaf nodes (topics with content)
   const flattenTopics = (topics: SubTopic[]): SubTopic[] => {
     const result: SubTopic[] = [];
@@ -179,11 +193,106 @@ export function SubjectContentPage({
     return result;
   };
 
+  const [pathway, setPathway] = useState<any>(null);
+  const [pathwayLoading, setPathwayLoading] = useState(true);
+  const [pathwayAdvancing, setPathwayAdvancing] = useState(false);
+
+  // Fetch pathway from API, fall back to localStorage cache
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      try {
+        const cached = localStorage.getItem('coursePathway');
+        if (cached) setPathway(JSON.parse(cached));
+      } catch { /* ignore */ }
+      setPathwayLoading(false);
+      return;
+    }
+    fetch(`${API_BASE_URL}/pathway`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const pw = d?.pathway ?? null;
+        setPathway(pw);
+        if (pw) {
+          try { localStorage.setItem('coursePathway', JSON.stringify(pw)); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => {
+        try {
+          const cached = localStorage.getItem('coursePathway');
+          if (cached) setPathway(JSON.parse(cached));
+        } catch { /* ignore */ }
+      })
+      .finally(() => setPathwayLoading(false));
+  }, []);
+
+  // ─── Pathway-aware helpers ───────────────────────────────────────────────
+  const currentPathwayStep = pathway?.steps?.[pathway.currentStepIndex] ?? null;
+  const currentSubjectBlock = currentPathwayStep?.subjectBlocks?.find(
+    (b: any) => b.subjectId === subjectContent?.id
+  ) ?? null;
+
+  const currentSubjectBlockIndex = currentPathwayStep?.subjectBlocks?.findIndex(
+    (b: any) => b.subjectId === subjectContent?.id
+  ) ?? -1;
+  const nextSubjectBlock = currentSubjectBlockIndex >= 0 && currentPathwayStep
+    ? currentPathwayStep.subjectBlocks[currentSubjectBlockIndex + 1] ?? null
+    : null;
+
+  const allSubjectsStudied = currentPathwayStep?.subjectBlocks?.every(
+    (b: any) => b.studyStatus === 'completed'
+  ) ?? false;
+
+  const isLastStep = pathway ? pathway.currentStepIndex >= pathway.steps.length - 1 : false;
+
   const flatList = flattenTopics(currentSubTopics);
   const currentIndex = flatList.findIndex(t => t.id === activeSubTopic);
-  const nextTopic = currentIndex >= 0 && currentIndex < flatList.length - 1 ? flatList[currentIndex + 1] : null;
+  let nextTopic = currentIndex >= 0 && currentIndex < flatList.length - 1 ? flatList[currentIndex + 1] : null;
 
-  const markCompletedAndNext = () => {
+  // Pathyway-aware restriction: if we are studying a pathway block, strict scope the "Next" button
+  // so it doesn't bleed into other topics in this course.
+  if (currentSubjectBlock?.topicId) {
+    const pathwayNode = findSubTopic(currentSubTopics, currentSubjectBlock.topicId);
+    if (pathwayNode) {
+      const pathwayLeaves = flattenTopics([pathwayNode]);
+      const isPathwayTopic = pathwayLeaves.some(leaf => leaf.id === activeSubTopic);
+      if (isPathwayTopic && activeSubTopic === pathwayLeaves[pathwayLeaves.length - 1].id) {
+        // This is the last leaf of the pathway block's required topic. Don't go to next global topic.
+        nextTopic = null;
+      }
+    }
+  }
+
+  // Mark study-done on the backend for the current subject block
+  const markPathwayStudyDone = async () => {
+    if (!currentPathwayStep || !currentSubjectBlock) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/pathway/study-done`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          stepNumber: currentPathwayStep.stepNumber,
+          subjectId: currentSubjectBlock.subjectId
+        })
+      });
+      if (res.ok) {
+        const pwRes = await fetch(`${API_BASE_URL}/pathway`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (pwRes.ok) {
+          const data = await pwRes.json();
+          setPathway(data.pathway);
+          try { localStorage.setItem('coursePathway', JSON.stringify(data.pathway)); } catch { /* ignore */ }
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  const markCompletedAndNext = async () => {
     if (!activeSubTopic) return;
     const updated = completedTopics.includes(activeSubTopic)
       ? completedTopics
@@ -192,7 +301,6 @@ export function SubjectContentPage({
     try { localStorage.setItem(progressKey, JSON.stringify(updated)); } catch { }
     if (nextTopic) {
       setActiveSubTopic(nextTopic.id);
-      // Auto-expand parent chain so the next topic is visible
       const parentsToExpand = findParentChain(currentSubTopics, nextTopic.id);
       if (parentsToExpand.length > 0) {
         setExpandedSubTopics(prev => {
@@ -200,7 +308,19 @@ export function SubjectContentPage({
           return Array.from(newSet);
         });
       }
+    } else {
+      if (currentSubjectBlock && currentSubjectBlock.studyStatus !== 'completed') {
+        await markPathwayStudyDone();
+      }
     }
+  };
+
+  // Toggle a topic's completion off (uncomplete it)
+  const toggleTopicCompletion = (topicId: string) => {
+    if (!completedTopics.includes(topicId)) return;
+    const updated = completedTopics.filter(id => id !== topicId);
+    setCompletedTopics(updated);
+    try { localStorage.setItem(progressKey, JSON.stringify(updated)); } catch { }
   };
 
   // Find all parent IDs for a given topic ID
@@ -225,34 +345,65 @@ export function SubjectContentPage({
     return leaves.every(leaf => completedTopics.includes(leaf.id));
   };
 
-  const [pathway, setPathway] = useState(null);
-  const [pathwayLoading, setPathwayLoading] = useState(true);
-
-  // Sync state if subjectContent loads after initial render
-  useEffect(() => {
-    if (subjectContent?.contentTypes?.length > 0 && !activeContentType) {
-      const tabFromUrl = searchParams.get('tab');
-      const contentType = subjectContent.contentTypes.find(ct => ct.id === tabFromUrl);
-      setActiveContentType(contentType ? (tabFromUrl as string) : subjectContent.contentTypes[0].id);
-    }
-  }, [subjectContent, searchParams, activeContentType]);
-
-  useEffect(() => {
+  // Advance to the next step in the pathway
+  const handleAdvanceStep = async () => {
     const token = localStorage.getItem('token');
-    if (!token) { setPathwayLoading(false); return; }
-    fetch(`${API_BASE_URL}/pathway`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => setPathway(d?.pathway ?? null))
-      .finally(() => setPathwayLoading(false));
-  }, []);
+    if (!token || pathwayAdvancing) return;
+    setPathwayAdvancing(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/pathway/next-step`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        // Refresh pathway
+        const pwRes = await fetch(`${API_BASE_URL}/pathway`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (pwRes.ok) {
+          const data = await pwRes.json();
+          setPathway(data.pathway);
+          try { localStorage.setItem('coursePathway', JSON.stringify(data.pathway)); } catch { /* ignore */ }
+          // Navigate to the first subject of the new step
+          const newStep = data.pathway?.steps?.[data.pathway.currentStepIndex];
+          if (newStep?.subjectBlocks?.[0]) {
+            const block = newStep.subjectBlocks[0];
+            navigate(`/subject/${block.subjectId}?topic=${block.topicId}${block.contentTypeIds?.[0] ? `&tab=${block.contentTypeIds[0]}` : ''}`);
+          } else {
+            navigate('/pathway');
+          }
+        }
+      }
+    } catch { /* ignore */ }
+    setPathwayAdvancing(false);
+  };
+
+  // Navigate to the next subject in the current pathway step
+  const navigateToNextSubject = () => {
+    if (!nextSubjectBlock) return;
+    navigate(`/subject/${nextSubjectBlock.subjectId}?topic=${nextSubjectBlock.topicId}${nextSubjectBlock.contentTypeIds?.[0] ? `&tab=${nextSubjectBlock.contentTypeIds[0]}` : ''}`);
+  };
 
 
-  // Set first subtopic when content type changes
+  // Set first subtopic when content type changes, or deep-link from ?topic= param
   useEffect(() => {
     if (currentSubTopics.length > 0) {
-      // Try to find matching topic in new content type based on current selection
+      // 1. Check URL ?topic= param for deep-linking from pathway page
+      const topicFromUrl = searchParams.get('topic');
+      if (topicFromUrl && !activeSubTopic) {
+        const urlTopic = findSubTopic(currentSubTopics, topicFromUrl);
+        if (urlTopic) {
+          setActiveSubTopic(urlTopic.id);
+          // Auto-expand parent chain so the topic is visible in sidebar
+          const parents = findParentChain(currentSubTopics, urlTopic.id);
+          if (parents.length > 0) {
+            setExpandedSubTopics(prev => Array.from(new Set([...prev, ...parents])));
+          }
+          return;
+        }
+      }
+
+      // 2. Try to find matching topic in new content type based on current selection
       const currentTopic = activeSubTopic ? findSubTopic(currentSubTopics, activeSubTopic) : null;
 
       if (currentTopic) {
@@ -260,7 +411,7 @@ export function SubjectContentPage({
         return;
       }
 
-      // Try to match by hierarchy: look for same name in current path
+      // 3. Try to match by hierarchy: look for same name in current path
       const matchedTopic = findMatchingTopicByName(currentSubTopics, activeSubTopic);
 
       if (matchedTopic) {
@@ -357,17 +508,6 @@ export function SubjectContentPage({
     if (!topic.subTopics) return null;
 
     return findTopicByNamePath(topic.subTopics, restPath);
-  };
-
-  const findSubTopic = (topics: SubTopic[] = [], id: string): SubTopic | null => {
-    for (const topic of topics) {
-      if (topic.id === id) return topic;
-      if (topic.subTopics) {
-        const found = findSubTopic(topic.subTopics, id);
-        if (found) return found;
-      }
-    }
-    return null;
   };
 
   const activeSubTopicData = findSubTopic(currentSubTopics, activeSubTopic);
@@ -730,32 +870,83 @@ export function SubjectContentPage({
 
             {/* Next Button */}
             {activeSubTopicData?.content && (
-              <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {isTopicCompleted(activeSubTopic) && (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>Completed</span>
-                    </>
-                  )}
+              <div className="mt-8 flex flex-col gap-4 border-t border-border pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {isTopicCompleted(activeSubTopic) && (
+                      <button
+                        onClick={() => toggleTopicCompletion(activeSubTopic)}
+                        className="flex items-center gap-1.5 text-green-500 hover:text-red-400 transition-colors cursor-pointer group"
+                        title="Click to mark as incomplete"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="group-hover:line-through">Completed</span>
+                      </button>
+                    )}
+                  </div>
+                  <Button
+                    onClick={markCompletedAndNext}
+                    className="gap-2"
+                    size="lg"
+                  >
+                    {nextTopic ? (
+                      <>
+                        Next: {nextTopic.name}
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        {isTopicCompleted(activeSubTopic) ? 'All Done!' : 'Mark Complete'}
+                        <CheckCircle2 className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  onClick={markCompletedAndNext}
-                  className="gap-2"
-                  size="lg"
-                >
-                  {nextTopic ? (
-                    <>
-                      Next: {nextTopic.name}
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      {isTopicCompleted(activeSubTopic) ? 'All Done!' : 'Mark Complete'}
-                      <CheckCircle2 className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
+
+                {/* Pathway-aware navigation: show after finishing all topics in this content type */}
+                {!nextTopic && isTopicCompleted(activeSubTopic) && currentPathwayStep && currentSubjectBlock && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    {nextSubjectBlock ? (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {currentSubjectBlock.subjectName} study complete!
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Next up: {nextSubjectBlock.subjectName} — {nextSubjectBlock.topicName}
+                          </p>
+                        </div>
+                        <Button onClick={navigateToNextSubject} size="sm" className="gap-1">
+                          Continue <ArrowRight className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            All subjects in Step {currentPathwayStep.stepNumber} complete!
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {isLastStep ? 'This is the final step!' : 'Ready to unlock the next step.'}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={handleAdvanceStep}
+                          disabled={pathwayAdvancing}
+                          size="sm"
+                          className="gap-1 bg-emerald-500 hover:bg-emerald-600"
+                        >
+                          {pathwayAdvancing
+                            ? 'Advancing…'
+                            : isLastStep
+                              ? 'Complete Pathway '
+                              : 'Next Step →'
+                          }
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

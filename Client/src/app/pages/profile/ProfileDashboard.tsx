@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  User, Mail, Calendar, MapPin, BookOpen, Award, 
-  TrendingUp, Clock, Target, Edit, Settings, 
-  Video, FileText, ClipboardCheck, Flame
+import {
+  User, Mail, Calendar, MapPin, BookOpen, Award,
+  TrendingUp, Clock, Target, Edit, Settings,
+  Video, FileText, ClipboardCheck, Flame, Map, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Navbar } from '@/app/components/UpdatedNavbar';
@@ -67,6 +67,7 @@ export function ProfileDashboard() {
 
   useEffect(() => {
     fetchProfile();
+    fetchPathway();
   }, []);
 
   const fetchProfile = async () => {
@@ -93,6 +94,32 @@ export function ProfileDashboard() {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Pathway data
+  const [pathwayData, setPathwayData] = useState<any>(null);
+  const [pathwayLoading, setPathwayLoading] = useState(true);
+
+  const fetchPathway = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { setPathwayLoading(false); return; }
+      const res = await fetch(`${API_BASE_URL}/pathway`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPathwayData(data.pathway);
+      }
+    } catch {
+      // Try localStorage fallback
+      try {
+        const cached = localStorage.getItem('coursePathway');
+        if (cached) setPathwayData(JSON.parse(cached));
+      } catch { /* ignore */ }
+    } finally {
+      setPathwayLoading(false);
     }
   };
 
@@ -147,9 +174,9 @@ export function ProfileDashboard() {
 
   return (
     <div className="min-h-screen bg-background overflow-y-auto">
-    <Navbar/>     
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8">
-    
+
         {/* Header Section */}
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl p-8 mb-8 border border-border">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
@@ -181,7 +208,7 @@ export function ProfileDashboard() {
                 {profile.profile?.fullName || profile.username}
               </h1>
               <p className="text-muted-foreground mb-3">@{profile.username}</p>
-              
+
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
@@ -289,6 +316,86 @@ export function ProfileDashboard() {
           </div>
         </div>
 
+        {/* Course Pathway Section */}
+        <div className="mb-8">
+          {pathwayLoading ? (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <div className="h-6 w-40 bg-muted rounded animate-pulse mb-4" />
+              <div className="h-3 w-full bg-muted rounded-full animate-pulse mb-3" />
+              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+            </div>
+          ) : pathwayData ? (
+            <div className="bg-gradient-to-r from-indigo-500/10 via-primary/5 to-transparent border border-indigo-500/20 rounded-xl p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-500/20 rounded-lg">
+                    <Map className="w-5 h-5 text-indigo-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-foreground">
+                      {pathwayData.targets?.categoryName || 'Course'} Pathway
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Step {Math.min(pathwayData.currentStepIndex + 1, pathwayData.totalSteps)} of {pathwayData.totalSteps}
+                      {pathwayData.overallStatus === 'completed' && ' · Complete! 🎉'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/pathway')}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+                >
+                  View Pathway <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Overall Progress</span>
+                  <span>{pathwayData.overallProgressPercent || 0}%</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${pathwayData.overallStatus === 'completed' ? 'bg-emerald-500' : 'bg-indigo-500'
+                      }`}
+                    style={{ width: `${pathwayData.overallProgressPercent || 0}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Targets row */}
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-foreground">{pathwayData.targets?.subjectsPerDay || '-'}</div>
+                  <div className="text-xs text-muted-foreground">Subjects/day</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-foreground">{pathwayData.targets?.hoursPerDay || '-'}h</div>
+                  <div className="text-xs text-muted-foreground">Hours/day</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-foreground">
+                    {pathwayData.steps?.filter((s: any) => s.status === 'completed').length || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Steps done</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-card border border-dashed border-border rounded-xl p-6 text-center">
+              <Map className="w-8 h-8 mx-auto text-muted-foreground mb-2 opacity-60" />
+              <p className="text-sm text-muted-foreground mb-3">No course pathway set up yet</p>
+              <button
+                onClick={() => navigate('/pathway')}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                Set Up Pathway
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - About & Education */}
@@ -330,7 +437,7 @@ export function ProfileDashboard() {
             {/* Education Section */}
             <div className="bg-card border border-border rounded-xl p-6">
               <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-      
+
                 Education
               </h2>
               <div className="space-y-4">
@@ -424,7 +531,7 @@ export function ProfileDashboard() {
                   {profile.achievements?.length || 0}
                 </span>
               </h2>
-              
+
               {profile.achievements && profile.achievements.length > 0 ? (
                 <div className="space-y-3">
                   {profile.achievements.slice(0, 5).map((achievement, index) => (

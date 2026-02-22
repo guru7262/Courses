@@ -240,7 +240,14 @@ function StepCard({ step, isCurrent, isLastStep, onNavigate, onCompleteStep }: S
 
   const handleBlockClick = (block: SubjectBlock) => {
     if (onNavigate) {
-      onNavigate(block.subjectId, block.topicId, block.contentTypeIds[0]);
+      // If study is done but mock isn't, navigate to mock content type tab
+      const studied = block.studyStatus === 'completed';
+      const mockDone = block.mockTest.status === 'completed' || block.mockTest.status === 'skipped';
+      let contentTypeId = block.contentTypeIds[0]; // default: first (notes)
+      if (studied && !mockDone && block.mockTest.contentTypeId) {
+        contentTypeId = block.mockTest.contentTypeId;
+      }
+      onNavigate(block.subjectId, block.topicId, contentTypeId);
     }
   };
 
@@ -342,7 +349,7 @@ function StepCard({ step, isCurrent, isLastStep, onNavigate, onCompleteStep }: S
                       <span className="text-xs font-semibold text-primary uppercase tracking-wide">
                         {block.subjectName}
                       </span>
-          
+
                       {blockDone && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                     </div>
 
@@ -467,7 +474,7 @@ function StepCard({ step, isCurrent, isLastStep, onNavigate, onCompleteStep }: S
               disabled={completing}
               className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
             >
-             
+
               {completing
                 ? 'Unlocking…'
                 : isLastStep
@@ -511,8 +518,11 @@ export function CoursePathwayPage({
       if (res.ok) {
         const data = await res.json();
         setPathway(data.pathway);
+        // Persist to localStorage for cross-page access
+        try { localStorage.setItem('coursePathway', JSON.stringify(data.pathway)); } catch { /* ignore */ }
       } else if (res.status === 404) {
         setPathway(null); // no pathway yet
+        try { localStorage.removeItem('coursePathway'); } catch { /* ignore */ }
       } else {
         setError('Failed to load pathway.');
       }
@@ -557,6 +567,8 @@ export function CoursePathwayPage({
       if (res.ok) {
         const json = await res.json();
         setPathway(json.pathway);
+        // Persist to localStorage
+        try { localStorage.setItem('coursePathway', JSON.stringify(json.pathway)); } catch { /* ignore */ }
         setShowSetup(false);
       } else {
         const err = await res.json();
