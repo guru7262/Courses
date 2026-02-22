@@ -7,7 +7,8 @@ const {
   updateEmail,
   getUserStats,
   updateProfilePicture,
-  deleteAccount
+  deleteAccount,
+  trackActivity
 } = require('../controllers/profileController');
 const authenticate = require('../middleware/auth');
 
@@ -23,6 +24,9 @@ router.put('/picture', updateProfilePicture);
 
 // Statistics
 router.get('/stats', getUserStats);
+
+// Activity tracking
+router.put('/activity', trackActivity);
 
 // Account management
 router.delete('/account', deleteAccount);
