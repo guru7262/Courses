@@ -186,6 +186,45 @@ export function SubjectContentPage({
     } catch { setCompletedTopics([]); }
   }, [progressKey, subjectContent?.id, activeContentType]);
 
+  const findTopicByNamePath = (topics: SubTopic[], namePath: string[]): SubTopic | null => {
+    if (namePath.length === 0) return null;
+
+    const [firstName, ...restPath] = namePath;
+    const topic = topics.find(t => t.name === firstName);
+
+    if (!topic) return null;
+    if (restPath.length === 0) return topic;
+    if (!topic.subTopics) return null;
+
+    return findTopicByNamePath(topic.subTopics, restPath);
+  };
+
+  const buildTopicPath = (topics: SubTopic[], targetId: string, currentPath: string[] = []): string[] => {
+    for (const topic of topics) {
+      const newPath = [...currentPath, topic.name];
+      if (topic.id === targetId) {
+        return newPath;
+      }
+      if (topic.subTopics) {
+        const found = buildTopicPath(topic.subTopics, targetId, newPath);
+        if (found.length > 0) return found;
+      }
+    }
+    return [];
+  };
+
+  // Helper to find first topic with content
+  const findFirstTopicWithContent = (topics: SubTopic[]): SubTopic | null => {
+    for (const topic of topics) {
+      if (topic.content) return topic;
+      if (topic.subTopics) {
+        const found = findFirstTopicWithContent(topic.subTopics);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const findSubTopic = (topics: SubTopic[] = [], id: string): SubTopic | null => {
     for (const topic of topics) {
       if (topic.id === id) return topic;
@@ -196,6 +235,33 @@ export function SubjectContentPage({
     }
     return null;
   };
+
+  const findMatchingTopicByName = (topics: SubTopic[], currentTopicId: string): SubTopic | null => {
+    const previousContentType = subjectContent?.contentTypes?.find(ct =>
+      ct.subTopics.some(st => findSubTopic([st], currentTopicId))
+    );
+    if (!previousContentType) return null;
+    const previousTopic = findSubTopic(previousContentType.subTopics, currentTopicId);
+    if (!previousTopic) return null;
+
+    const path = buildTopicPath(previousContentType.subTopics, currentTopicId);
+    if (path.length === 0) return null;
+
+    for (let i = path.length - 1; i >= 0; i--) {
+      const matchedTopic = findTopicByNamePath(topics, path.slice(0, i + 1));
+      if (matchedTopic) {
+        if (matchedTopic.content) return matchedTopic;
+        if (matchedTopic.subTopics) {
+          const firstChild = findFirstTopicWithContent(matchedTopic.subTopics);
+          if (firstChild) return firstChild;
+        }
+        return matchedTopic;
+      }
+    }
+    return null;
+  };
+
+
 
   // Flatten subtopic tree into ordered list of leaf nodes (topics with content)
   const flattenTopics = (topics: SubTopic[]): SubTopic[] => {
@@ -272,10 +338,16 @@ export function SubjectContentPage({
   const currentIndex = flatList.findIndex(t => t.id === activeSubTopic);
   let nextTopic = currentIndex >= 0 && currentIndex < flatList.length - 1 ? flatList[currentIndex + 1] : null;
 
-  // Pathyway-aware restriction: if we are studying a pathway block, strict scope the "Next" button
+  // Pathway-aware restriction: if we are studying a pathway block, strict scope the "Next" button
   // so it doesn't bleed into other topics in this course.
   if (currentSubjectBlock?.topicId) {
-    const pathwayNode = findSubTopic(currentSubTopics, currentSubjectBlock.topicId);
+    let pathwayNode = findSubTopic(currentSubTopics, currentSubjectBlock.topicId);
+
+    // If we're on a different tab (like Mock Tests), the UUID won't match. Find by hierarchy instead.
+    if (!pathwayNode) {
+      pathwayNode = findMatchingTopicByName(currentSubTopics, currentSubjectBlock.topicId) || null;
+    }
+
     if (pathwayNode) {
       const pathwayLeaves = flattenTopics([pathwayNode]);
       const isPathwayTopic = pathwayLeaves.some(leaf => leaf.id === activeSubTopic);
@@ -399,7 +471,8 @@ export function SubjectContentPage({
           const newStep = data.pathway?.steps?.[data.pathway.currentStepIndex];
           if (newStep?.subjectBlocks?.[0]) {
             const block = newStep.subjectBlocks[0];
-            navigate(`/subject/${block.subjectId}?topic=${block.topicId}${block.contentTypeIds?.[0] ? `&tab=${block.contentTypeIds[0]}` : ''}`);
+            const targetTab = block.contentTypeIds?.find((id: string) => id !== block.mockTest?.contentTypeId) || block.contentTypeIds?.[0];
+            navigate(`/subject/${block.subjectId}?topic=${block.topicId}${targetTab ? `&tab=${targetTab}` : ''}`);
           } else {
             navigate('/pathway');
           }
@@ -412,17 +485,33 @@ export function SubjectContentPage({
   // Navigate to the next subject in the current pathway step
   const navigateToNextSubject = () => {
     if (!nextSubjectBlock) return;
-    navigate(`/subject/${nextSubjectBlock.subjectId}?topic=${nextSubjectBlock.topicId}${nextSubjectBlock.contentTypeIds?.[0] ? `&tab=${nextSubjectBlock.contentTypeIds[0]}` : ''}`);
+    const targetTab = nextSubjectBlock.contentTypeIds?.find((id: string) => id !== nextSubjectBlock.mockTest?.contentTypeId) || nextSubjectBlock.contentTypeIds?.[0];
+    navigate(`/subject/${nextSubjectBlock.subjectId}?topic=${nextSubjectBlock.topicId}${targetTab ? `&tab=${targetTab}` : ''}`);
   };
 
 
+  const [lastProcessedUrlParams, setLastProcessedUrlParams] = useState({
+    topic: searchParams.get('topic'),
+    tab: searchParams.get('tab')
+  });
+
   // Set first subtopic when content type changes, or deep-link from ?topic= param
   useEffect(() => {
-    if (currentSubTopics.length > 0) {
-      // 1. Check URL ?topic= param for deep-linking from pathway page
-      const topicFromUrl = searchParams.get('topic');
-      if (topicFromUrl && !activeSubTopic) {
-        const urlTopic = findSubTopic(currentSubTopics, topicFromUrl);
+    const currentTopicFromUrl = searchParams.get('topic');
+    const currentTabFromUrl = searchParams.get('tab');
+    const urlChanged =
+      currentTopicFromUrl !== lastProcessedUrlParams.topic ||
+      currentTabFromUrl !== lastProcessedUrlParams.tab;
+
+    if (urlChanged) {
+      setLastProcessedUrlParams({ topic: currentTopicFromUrl, tab: currentTabFromUrl });
+
+      if (currentTabFromUrl && subjectContent?.contentTypes?.some(ct => ct.id === currentTabFromUrl)) {
+        setActiveContentType(currentTabFromUrl);
+      }
+
+      if (currentTopicFromUrl && currentSubTopics.length > 0) {
+        const urlTopic = findSubTopic(currentSubTopics, currentTopicFromUrl);
         if (urlTopic) {
           setActiveSubTopic(urlTopic.id);
           // Auto-expand parent chain so the topic is visible in sidebar
@@ -430,10 +519,13 @@ export function SubjectContentPage({
           if (parents.length > 0) {
             setExpandedSubTopics(prev => Array.from(new Set([...prev, ...parents])));
           }
-          return;
         }
       }
+      // If we just handled a URL navigation, stop here to avoid overriding with fallback logic
+      return;
+    }
 
+    if (currentSubTopics.length > 0) {
       // 2. Try to find matching topic in new content type based on current selection
       const currentTopic = activeSubTopic ? findSubTopic(currentSubTopics, activeSubTopic) : null;
 
@@ -461,85 +553,7 @@ export function SubjectContentPage({
     }
   }, [activeContentType, currentSubTopics]);
 
-  // Helper to find first topic with content
-  const findFirstTopicWithContent = (topics: SubTopic[]): SubTopic | null => {
-    for (const topic of topics) {
-      if (topic.content) return topic;
-      if (topic.subTopics) {
-        const found = findFirstTopicWithContent(topic.subTopics);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
 
-
-
-  // Helper to find matching topic by hierarchy path
-  const findMatchingTopicByName = (topics: SubTopic[], currentTopicId: string): SubTopic | null => {
-    // First, try to find the exact same topic by name in the previous content type
-    const previousContentType = subjectContent?.contentTypes?.find(ct =>
-      ct.subTopics.some(st => findSubTopic([st], currentTopicId))
-    );
-
-    if (!previousContentType) return null;
-
-    const previousTopic = findSubTopic(previousContentType.subTopics, currentTopicId);
-    if (!previousTopic) return null;
-
-    // Build path of names from root to current topic
-    const path = buildTopicPath(previousContentType.subTopics, currentTopicId);
-    if (path.length === 0) return null;
-
-    // Try to match the deepest level first, then work up
-    for (let i = path.length - 1; i >= 0; i--) {
-      const matchedTopic = findTopicByNamePath(topics, path.slice(0, i + 1));
-      if (matchedTopic) {
-        // If matched topic has content, use it
-        if (matchedTopic.content) {
-          return matchedTopic;
-        }
-        // Otherwise, try to find first child with content
-        if (matchedTopic.subTopics) {
-          const firstChild = findFirstTopicWithContent(matchedTopic.subTopics);
-          if (firstChild) return firstChild;
-        }
-        // If no content in children, return the matched topic anyway
-        return matchedTopic;
-      }
-    }
-
-    return null;
-  };
-
-  // Build path of topic names from root to target
-  const buildTopicPath = (topics: SubTopic[], targetId: string, currentPath: string[] = []): string[] => {
-    for (const topic of topics) {
-      const newPath = [...currentPath, topic.name];
-      if (topic.id === targetId) {
-        return newPath;
-      }
-      if (topic.subTopics) {
-        const found = buildTopicPath(topic.subTopics, targetId, newPath);
-        if (found.length > 0) return found;
-      }
-    }
-    return [];
-  };
-
-  // Find topic by matching path of names
-  const findTopicByNamePath = (topics: SubTopic[], namePath: string[]): SubTopic | null => {
-    if (namePath.length === 0) return null;
-
-    const [firstName, ...restPath] = namePath;
-    const topic = topics.find(t => t.name === firstName);
-
-    if (!topic) return null;
-    if (restPath.length === 0) return topic;
-    if (!topic.subTopics) return null;
-
-    return findTopicByNamePath(topic.subTopics, restPath);
-  };
 
   const activeSubTopicData = findSubTopic(currentSubTopics, activeSubTopic);
   const activeContentTypeData = currentContentType;
@@ -994,7 +1008,27 @@ export function SubjectContentPage({
                 {/* Pathway-aware navigation: show after finishing all topics in this content type */}
                 {!nextTopic && isTopicCompleted(activeSubTopic) && currentPathwayStep && currentSubjectBlock && (
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                    {nextSubjectBlock ? (
+                    {currentSubjectBlock.mockTest.contentTypeId &&
+                      currentSubjectBlock.mockTest.status === 'pending' &&
+                      activeContentType !== currentSubjectBlock.mockTest.contentTypeId ? (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {currentSubjectBlock.subjectName} study complete!
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Next up: Mock Test for this topic
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => setActiveContentType(currentSubjectBlock.mockTest.contentTypeId!)}
+                          size="sm"
+                          className="gap-1 bg-amber-500 hover:bg-amber-600 text-white"
+                        >
+                          Take Mock Test <ArrowRight className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : nextSubjectBlock ? (
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-foreground">
