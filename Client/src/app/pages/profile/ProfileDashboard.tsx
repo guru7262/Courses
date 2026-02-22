@@ -3,8 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   User, Mail, Calendar, MapPin, BookOpen, Award,
   TrendingUp, Clock, Target, Edit, Settings,
-  Video, FileText, ClipboardCheck, Flame, Map, ChevronRight
+  Video, FileText, ClipboardCheck, Flame, Map, ChevronRight,
+  BarChart2, Activity
 } from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, AreaChart, Area
+} from 'recharts';
 import { Button } from '@/app/components/ui/button';
 import { Navbar } from '@/app/components/UpdatedNavbar';
 
@@ -134,6 +139,28 @@ export function ProfileDashboard() {
     }
     return profile?.username?.slice(0, 2).toUpperCase() || 'U';
   };
+
+  const getMockAccuracyData = () => {
+    if (!pathwayData || !pathwayData.steps) return [];
+
+    const accuracyData: any[] = [];
+    pathwayData.steps.forEach((step: any) => {
+      step.subjectBlocks.forEach((block: any) => {
+        if (block.mockTest && block.mockTest.status === 'completed' && block.mockTest.result) {
+          accuracyData.push({
+            name: block.subjectName.length > 12 ? block.subjectName.substring(0, 10) + '...' : block.subjectName,
+            topic: block.topicName,
+            accuracy: block.mockTest.result.scorePercent,
+            date: new Date(block.mockTest.result.attemptedAt).toLocaleDateString(),
+            fullSubject: block.subjectName
+          });
+        }
+      });
+    });
+    return accuracyData;
+  };
+
+  const mockStats = getMockAccuracyData();
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Not set';
@@ -315,6 +342,83 @@ export function ProfileDashboard() {
             <p className="text-sm text-muted-foreground">Current Streak</p>
           </div>
         </div>
+
+        {/* Performance Visualization Section */}
+        {mockStats.length > 0 && (
+          <div className="bg-card border border-border rounded-xl p-6 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 bg-green-500/10 rounded-lg">
+                <BarChart2 className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Performance Trend</h2>
+                <p className="text-xs text-muted-foreground">Accuracy across your mock tests</p>
+              </div>
+            </div>
+
+            <div className="h-[300px] w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={mockStats}>
+                  <defs>
+                    <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888888" opacity={0.2} />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#888888', fontSize: 12 }}
+                    dy={10}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#888888', fontSize: 12 }}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      borderColor: '#374151',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: '#f3f4f6'
+                    }}
+                    itemStyle={{ color: '#818cf8' }}
+                    labelStyle={{ fontWeight: 'bold', marginBottom: '4px', color: '#ffffff' }}
+                    formatter={(value: number) => [`${value}%`, 'Accuracy']}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload.length > 0) {
+                        return `${payload[0].payload.fullSubject} - ${payload[0].payload.topic}`;
+                      }
+                      return label;
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="accuracy"
+                    stroke="none"
+                    fillOpacity={1}
+                    fill="url(#colorAccuracy)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="accuracy"
+                    stroke="#6366f1"
+                    strokeWidth={3}
+                    dot={{ r: 5, fill: '#6366f1', strokeWidth: 2, stroke: '#ffffff' }}
+                    activeDot={{ r: 7, strokeWidth: 0, fill: '#818cf8' }}
+                    animationDuration={1500}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Course Pathway Section */}
         <div className="mb-8">
