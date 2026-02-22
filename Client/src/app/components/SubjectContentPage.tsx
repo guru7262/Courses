@@ -261,8 +261,6 @@ export function SubjectContentPage({
     return null;
   };
 
-
-
   // Flatten subtopic tree into ordered list of leaf nodes (topics with content)
   const flattenTopics = (topics: SubTopic[]): SubTopic[] => {
     const result: SubTopic[] = [];
