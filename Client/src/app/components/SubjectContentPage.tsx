@@ -397,6 +397,17 @@ export function SubjectContentPage({
       : [...completedTopics, activeSubTopic];
     setCompletedTopics(updated);
     try { localStorage.setItem(progressKey, JSON.stringify(updated)); } catch { }
+
+    // Track note/study activity on the user's profile
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${API_BASE_URL}/profile/activity`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ event: 'note_read' })
+      }).catch(() => { /* ignore – non-critical */ });
+    }
+
     if (nextTopic) {
       setActiveSubTopic(nextTopic.id);
       const parentsToExpand = findParentChain(currentSubTopics, nextTopic.id);
@@ -685,7 +696,18 @@ export function SubjectContentPage({
   };
 
   const handleMockSubmit = async (score: number, total: number, wrongTopicIds: string[]) => {
-    // If we're not inside a pathway step, we can't save to pathway
+    const token = localStorage.getItem('token');
+
+    // Track quiz activity on the user's profile (always, even outside a pathway)
+    if (token) {
+      fetch(`${API_BASE_URL}/profile/activity`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ event: 'quiz_taken', score, total })
+      }).catch(() => { /* ignore – non-critical */ });
+    }
+
+    // If we're not inside a pathway step, nothing more to do
     if (!currentPathwayStep || !currentSubjectBlock) return;
 
     // Only process if this is the mock test content type
@@ -694,7 +716,6 @@ export function SubjectContentPage({
     if (!isMockTab) return;
 
     try {
-      const token = localStorage.getItem('token');
       if (!token) return;
 
       const res = await fetch(`${API_BASE_URL}/pathway/mock-result`, {

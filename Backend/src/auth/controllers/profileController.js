@@ -4,7 +4,7 @@ const User = require('../models/User');
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -33,10 +33,10 @@ const updateProfile = async (req, res) => {
     const updates = req.body;
 
     // Prevent updating sensitive fields
-    const restrictedFields = ['password', 'email', 'isVerified', 'verificationToken', 
-                             'verificationTokenExpires', 'resetPasswordToken', 
-                             'resetPasswordExpires', 'createdAt'];
-    
+    const restrictedFields = ['password', 'email', 'isVerified', 'verificationToken',
+      'verificationTokenExpires', 'resetPasswordToken',
+      'resetPasswordExpires', 'createdAt'];
+
     restrictedFields.forEach(field => delete updates[field]);
 
     // Update profile last updated timestamp
@@ -62,7 +62,7 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    
+
     // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
@@ -94,9 +94,9 @@ const updateUsername = async (req, res) => {
     }
 
     // Check if username is already taken
-    const existingUser = await User.findOne({ 
-      username, 
-      _id: { $ne: req.user._id } 
+    const existingUser = await User.findOne({
+      username,
+      _id: { $ne: req.user._id }
     });
 
     if (existingUser) {
@@ -108,7 +108,7 @@ const updateUsername = async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { 
+      {
         username,
         profileLastUpdated: Date.now()
       },
@@ -122,7 +122,7 @@ const updateUsername = async (req, res) => {
     });
   } catch (error) {
     console.error('Update username error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -153,9 +153,9 @@ const updateEmail = async (req, res) => {
     }
 
     // Check if email is already taken
-    const existingUser = await User.findOne({ 
-      email, 
-      _id: { $ne: req.user._id } 
+    const existingUser = await User.findOne({
+      email,
+      _id: { $ne: req.user._id }
     });
 
     if (existingUser) {
@@ -168,7 +168,7 @@ const updateEmail = async (req, res) => {
     const user = await User.findById(req.user._id);
     user.email = email;
     user.isVerified = false; // Require re-verification
-    
+
     // Generate new verification token
     const verificationToken = user.generateVerificationToken();
     await user.save();
@@ -216,7 +216,7 @@ const getUserStats = async (req, res) => {
       achievements: user.achievements,
       enrolledSubjects: user.enrolledSubjects,
       totalAchievements: user.achievements.length,
-      averageProgress: user.enrolledSubjects.length > 0 
+      averageProgress: user.enrolledSubjects.length > 0
         ? user.enrolledSubjects.reduce((acc, subject) => acc + subject.progress, 0) / user.enrolledSubjects.length
         : 0
     };
@@ -242,10 +242,10 @@ const updateProfilePicture = async (req, res) => {
 
     // For now, just accept URL string
     // Later, implement file upload with multer
-    
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { 
+      {
         'profile.profilePicture': profilePicture,
         profileLastUpdated: Date.now()
       },
@@ -313,6 +313,62 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// Track user activity and update stats / streak
+const trackActivity = async (req, res) => {
+  try {
+    const { event } = req.body;
+    if (!event) {
+      return res.status(400).json({ success: false, message: 'event is required.' });
+    }
+
+    const inc = {};
+    if (event === 'note_read') inc['activityStats.totalNotesCreated'] = 1;
+    if (event === 'video_watched') inc['activityStats.totalVideosWatched'] = 1;
+    if (event === 'quiz_taken') inc['activityStats.totalQuizzesTaken'] = 1;
+
+    // --- Streak calculation ---
+    const user = await User.findById(req.user._id).select('activityStats');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const lastDate = user.activityStats?.lastActivityDate
+      ? new Date(user.activityStats.lastActivityDate)
+      : null;
+    if (lastDate) lastDate.setHours(0, 0, 0, 0);
+
+    const diffDays = lastDate
+      ? Math.round((today.getTime() - lastDate.getTime()) / 86400000)
+      : null;
+
+    let newStreak = user.activityStats?.currentStreak || 0;
+    if (diffDays === null || diffDays > 1) newStreak = 1;    // first ever or streak broken
+    else if (diffDays === 1) newStreak += 1;     // consecutive day
+    // diffDays === 0 → same day, keep current streak
+
+    const longestStreak = Math.max(user.activityStats?.longestStreak || 0, newStreak);
+
+    const updated = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $inc: inc,
+        $set: {
+          'activityStats.currentStreak': newStreak,
+          'activityStats.longestStreak': longestStreak,
+          'activityStats.lastActivityDate': new Date()
+        }
+      },
+      { new: true }
+    ).select('activityStats');
+
+    res.json({ success: true, activityStats: updated.activityStats });
+  } catch (error) {
+    console.error('trackActivity error:', error);
+    res.status(500).json({ success: false, message: 'Failed to track activity.', error: error.message });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -320,5 +376,6 @@ module.exports = {
   updateEmail,
   getUserStats,
   updateProfilePicture,
-  deleteAccount
+  deleteAccount,
+  trackActivity
 };
